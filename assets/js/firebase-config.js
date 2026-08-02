@@ -16,12 +16,12 @@
    ========================================================================== */
 
 window.FIREBASE_CONFIG = {
-  apiKey:            "PASTE_YOUR_API_KEY",
-  authDomain:        "PASTE_YOUR_PROJECT.firebaseapp.com",
-  projectId:         "PASTE_YOUR_PROJECT_ID",
-  storageBucket:     "PASTE_YOUR_PROJECT.firebasestorage.app",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID",
-  appId:             "PASTE_YOUR_APP_ID",
+  apiKey:            "AIzaSyBAwkonS3iixgmP1OQR-F3oMAAGgSNpi9k",
+  authDomain:        "fretboard-aa6ca.firebaseapp.com",
+  projectId:         "fretboard-aa6ca",
+  storageBucket:     "fretboard-aa6ca.firebasestorage.app",
+  messagingSenderId: "2867236032",                            
+  appId:             "1:2867236032:web:45b22106ffab645b457125",
 };
 
 /* These keys are safe to commit publicly — they identify your project, they
