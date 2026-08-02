@@ -23,8 +23,12 @@
   .song-diagrams { display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-soft);
                    gap:6px; flex-wrap:wrap; }
   .song-diagrams.show { display:flex; }
-  .song-actions { display:flex; gap:7px; flex-shrink:0; }
+  .song-actions { display:flex; gap:7px; flex-shrink:0; align-items:center; }
   .capo { font-family:var(--mono); font-size:.74rem; color:var(--accent); }
+  .cc-play { cursor:pointer; transition:.12s; }
+  .cc-play:hover { border-color:var(--accent); color:var(--accent-2); background:var(--accent-dim); }
+  .cc-play.sounding { background:var(--accent); color:#16110a; border-color:var(--accent); }
+  .song .play-btn { padding:6px 13px; font-size:.8rem; }
 </style>
 </head>
 <body>
@@ -46,6 +50,7 @@
 
   <div class="callout mb">
     <strong>About keys and capos.</strong> These are the common guitar-chart versions, which often sit a little away from the studio recording. Move the capo up or down until the song sits comfortably in <em>your</em> voice — week 17 teaches you exactly how. The chords stay the same; only the capo moves.
+    <br><br><strong>Press ▶ Play on any song</strong> to hear its chords with the strum pattern listed for it. Click an individual chord name to hear just that one. Fingerstyle songs are picked rather than strummed. Capo isn't applied to the playback — you're hearing the shapes, not the recording.
   </div>
 
   <!-- recommended -->
@@ -95,6 +100,10 @@
 <script src="assets/js/curriculum.js"></script>
 <script src="assets/js/songs.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/audio-guitar.js"></script>
+<script src="assets/js/visuals.js"></script>
+<script src="assets/js/lessons.js"></script>
+<script src="assets/js/lesson-ui.js"></script>
 <script src="assets/js/sync.js"></script>
 <script>
 const { Store, initPage, toast, chordSVG, CHORDS, uid, todayISO, esc } = Fretwork;
@@ -129,6 +138,7 @@ function card(s){
           <span class="tag tag-p${Math.min(4,s.diff)}" style="font-size:.68rem;padding:1px 7px">Week ${s.week}+</span></div>
       </div>
       <div class="song-actions">
+        <button class="play-btn" data-act="play" title="Hear the chords with this song's strum">▶ Play</button>
         <button class="btn btn-sm" data-act="diagrams">Chords</button>
         <button class="btn btn-sm ${added?"":"btn-primary"}" data-act="add" ${added?"disabled":""}>${added?"✓ Added":"+ Repertoire"}</button>
       </div>
@@ -137,7 +147,7 @@ function card(s){
       <span class="cc">Key ${esc(s.key)}</span>
       <span class="cc capo">${s.capo?("Capo "+s.capo):"No capo"}</span>
       <span class="cc">${esc(s.strum)}</span>
-      ${s.ch.map(c=>`<span class="cc">${esc(c)}</span>`).join("")}
+      ${s.ch.map(c=>`<span class="cc cc-play" data-chord="${esc(c)}" title="Hear ${esc(c)}">${esc(c)}</span>`).join("")}
     </div>
     <div class="song-why">${esc(s.why)}</div>
     <div class="song-diagrams">${s.ch.map(c=>CHORDS[c]?chordSVG(c,0.8):"").join("")}</div>
@@ -189,14 +199,59 @@ function renderList(){
   }).join("");
 }
 
+/* ---------------- playback ---------------- */
+let playing = null;   // the button currently sounding
+
+function stopPlayback(){
+  Guitar.stopAll();
+  if(playing){ playing.textContent = "▶ Play"; playing.classList.remove("playing"); playing = null; }
+}
+
+/* Plays the song's chord loop using the strum pattern listed for it.
+   Fingerstyle songs are arpeggiated instead of strummed. */
+function playSong(s, btn){
+  if(playing === btn) return stopPlayback();
+  stopPlayback();
+  playing = btn;
+  btn.textContent = "■ Stop";
+  btn.classList.add("playing");
+
+  const pb = SONGLIB.playbackFor(s.strum);
+  const chords = s.ch.filter(c=>CHORDS[c]).slice(0, 4);
+  if(!chords.length){ stopPlayback(); return toast("No chord shapes for this song yet"); }
+
+  const bpm = pb.mode==="arpeggio" ? 66 : 74;
+  let t = 0;
+  chords.forEach(c=>{
+    if(pb.mode==="arpeggio"){
+      const r = Guitar.arpeggio(c, { when:t, gap:0.26 });
+      t += r.duration + 0.1;
+    } else if(pb.mode==="travis"){
+      const r = Guitar.travis(c, { when:t, bpm, bars:1 });
+      t += r.duration;
+    } else {
+      const r = Guitar.playPattern(c, pb.pattern, bpm, { bars:1, when:t });
+      t += r.duration;
+    }
+  });
+  setTimeout(()=>{ if(playing===btn) stopPlayback(); }, t*1000 + 900);
+}
+
 function wire(root){
   root.onclick = e=>{
+    const chip = e.target.closest("[data-chord]");
+    if(chip){ Guitar.chord(chip.dataset.chord, { duration:2.8 });
+      chip.classList.add("sounding"); setTimeout(()=>chip.classList.remove("sounding"), 700); return; }
+
     const btn = e.target.closest("[data-act]"); if(!btn) return;
     const el = btn.closest(".song"), title = el.dataset.t;
     const s = SONGLIB.all.find(x=>x.t===title);
+    if(btn.dataset.act==="play"){ playSong(s, btn); return; }
     if(btn.dataset.act==="diagrams"){
-      el.querySelector(".song-diagrams").classList.toggle("show");
+      const box = el.querySelector(".song-diagrams");
+      box.classList.toggle("show");
       btn.classList.toggle("btn-primary");
+      if(window.Viz) Viz.wireAudio(box);
       return;
     }
     if(btn.dataset.act==="add"){

@@ -75,10 +75,16 @@
     </div>
 
     <div class="grid g-side mt-lg">
-      <div class="card">
-        <div class="stat-lab mb">What to do</div>
-        <p id="r-what" style="font-size:1.02rem"></p>
-        <div class="callout mt" id="r-how"></div>
+      <div class="card pad-lg">
+        <div class="lesson-tabs" id="l-tabs">
+          <button class="on" data-t="how">Show me how</button>
+          <button data-t="brief">Quick version</button>
+        </div>
+        <div id="r-lesson"></div>
+        <div id="r-brief" style="display:none">
+          <p id="r-what" style="font-size:1.02rem"></p>
+          <div class="callout mt" id="r-how"></div>
+        </div>
       </div>
       <div class="card">
         <div class="stat-lab mb">Session queue</div>
@@ -138,6 +144,10 @@
 <script src="assets/js/firebase-config.js"></script>
 <script src="assets/js/curriculum.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/audio-guitar.js"></script>
+<script src="assets/js/visuals.js"></script>
+<script src="assets/js/lessons.js"></script>
+<script src="assets/js/lesson-ui.js"></script>
 <script src="assets/js/sync.js"></script>
 <script>
 const { Store, Progress, initPage, toast, tone, click, esc } = Fretwork;
@@ -200,8 +210,34 @@ function loadBlock(){
   const how = document.getElementById("r-how");
   how.style.display = b.how ? "block" : "none";
   how.innerHTML = b.how ? "<strong>Technique:</strong> "+esc(b.how) : "";
+
+  /* Full visual lesson if this block has one */
+  const lesson = window.Lessons && Lessons.get(wk.n, b.name);
+  const tabs = document.getElementById("l-tabs");
+  const lessonEl = document.getElementById("r-lesson");
+  const briefEl = document.getElementById("r-brief");
+  if(lesson && window.LessonUI){
+    tabs.style.display = "flex";
+    LessonUI.mount(lessonEl, lesson);
+    showTab("how");
+  } else {
+    tabs.style.display = "none";
+    lessonEl.innerHTML = "";
+    briefEl.style.display = "block";
+  }
+
   paintClock(); paintQueue();
 }
+
+function showTab(t){
+  document.querySelectorAll("#l-tabs button").forEach(b=>b.classList.toggle("on", b.dataset.t===t));
+  document.getElementById("r-lesson").style.display = t==="how" ? "block" : "none";
+  document.getElementById("r-brief").style.display  = t==="how" ? "none" : "block";
+}
+document.getElementById("l-tabs").onclick = e=>{
+  const b = e.target.closest("[data-t]"); if(!b) return;
+  showTab(b.dataset.t);
+};
 function paintQueue(){
   document.getElementById("queue").innerHTML = queue.map((b,i)=>`
     <div class="row-between small" style="padding:7px 0;border-bottom:1px solid var(--border-soft);${i===idx?"color:var(--accent);font-weight:650":""}${i<idx?"opacity:.45":""}">

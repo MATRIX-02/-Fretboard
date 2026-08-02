@@ -149,8 +149,38 @@ const TAGS = {
 
 const LANGS = { hi:"Hindi", ur:"Urdu", pa:"Punjabi", en:"English" };
 
+/* --------------------------------------------------------------- playback */
+/* Turn the human-readable strum description into something the audio engine
+   can actually play. Longest keys are matched first so "D DU DU" doesn't get
+   caught by the "D DU" rule. */
+const STRUM_MAP = [
+  ["d du udu",  "D-DU-UDU"],
+  ["d du ud",   "D-DU-UD-"],
+  ["du du du",  "DUDUDU--"],
+  ["d du du",   "D-DU-DU-"],
+  ["d d du",    "D-D--DU-"],
+  ["d du",      "D-DU----"],
+  ["d d",       "D-D-D-D-"],
+];
+
+function playbackFor(strum) {
+  const s = String(strum || "").toLowerCase();
+  if (/travis/.test(s)) return { mode: "travis" };
+  if (/fingerstyle|chord-melody|arpegg|picked|picking|riff\/picked|picked intro/.test(s)) {
+    return { mode: "arpeggio" };
+  }
+  if (/power chord/.test(s)) return { mode: "strum", pattern: "D-D-DUD-", palmMute: true };
+  for (const [key, pat] of STRUM_MAP) {
+    if (s.includes(key)) return { mode: "strum", pattern: pat };
+  }
+  /* "complex", "lead", anything unrecognised — fall back to the common one */
+  return { mode: "strum", pattern: "D-DU-UDU" };
+}
+
 const SONGLIB = {
   all: SONGS,
+  playbackFor,
+  STRUM_MAP,
   diffs: DIFFS,
   tags: TAGS,
   langs: LANGS,

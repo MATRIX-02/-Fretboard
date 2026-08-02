@@ -15,7 +15,7 @@ A self-contained guitar learning site: a 48-week curriculum from first note to i
 | `week.html` | Current week in depth — blocks with tick-off, chord diagrams, weekly day grid |
 | `practice.html` | Timed session runner: block-by-block timer, inline metronome, session log |
 | `songs.html` | 92-song library — mainly Hindi, plus English staples — with chords, capo, strum and the week each unlocks |
-| `tools.html` | Metronome, tuner, chord library, fretboard trainer, ear trainer, change test, scale finder |
+| `tools.html` | Metronome, tuner, chord library, strum patterns, progression player, fretboard trainer, ear trainer, change test, scale finder — all with guitar audio |
 | `tracker.html` | Charts, measured skills, repertoire list, goals, practice log, backup/restore |
 | `reminders.html` | Daily notification, calendar export, habit-design checklist |
 | `account.html` | Sign in, cross-device sync status, guest upgrade, setup guide |
@@ -57,11 +57,28 @@ Pick Short / Normal / Long at the start of each session and the runner builds th
 - Interactive chord diagrams (47 shapes with fingering numbers)
 - Scale & key finder — 11 scales, diatonic chords, full fretboard map
 
+**Visual lessons** — every Phase 1 block (all 40, weeks 1–8)
+- Numbered steps instead of one dense paragraph — tap "Show me how" on any block
+- Fretboard diagrams showing exactly which finger goes on which string and fret; click any dot to hear that note
+- Purpose-built explainers for the things text can't convey: where "behind the fret" actually is, how hard to press, pick grip, sitting posture, p-i-m-a picking assignments, strum-pattern grids
+- Chord-change maps that compare two shapes and tell you what stays planted, what's a shared landmark, and what has to move — computed from the chord data, not hand-written
+- "If it isn't working" troubleshooting (buzzing, dead strings, aching hand) and a self-check for every block
+
+**Acoustic guitar audio** — synthesised, no files, works offline
+- Extended Karplus–Strong: dual-polarisation strings (fast initial decay into a long ringing tail, with gentle beating between the two planes), pick-position comb filtering, a pick attack transient, dreadnought body resonances, and per-string character so wound basses are darker than plain trebles
+- Voice stealing — restriking a string cuts the note already on it, so strummed chords don't pile into mud
+- Human detune and velocity spread on strums; single notes stay exact
+- Strum, fingerpicked arpeggio and Travis-picking engines
+- Accurate to **0.25 cents** across the whole neck — verified by frequency analysis, so it's safe to tune and train your ear against
+- No "click to unlock" step. Press play; if a browser genuinely refuses, a bar appears offering to play anyway
+
 **Songs (92 total — 65 Hindi/Urdu/Punjabi, 27 English)**
 - Categories: unplugged staples, modern Bollywood, Indian indie, Hindi rock, 90s Indipop, 2000s Bollywood, ghazals, golden-era film, English classics, fingerstyle pieces, lead studies
 - Each song lists key, capo, chord set, strum pattern, and the curriculum week where it becomes playable
 - Filter by language, category, level, chord, or "only what I can play now"
 - Recommendations lean Hindi and follow your current week; dashboard and week pages surface three picks each
+- **Press ▶ Play on any song** to hear its chords with that song's own strum pattern; fingerstyle songs are picked rather than strummed, Travis-picking songs use the Travis engine
+- Click any individual chord name to hear just that shape
 - One click adds a song to your tracker repertoire with its chords and strum pre-filled
 
 ### Song levels
@@ -76,13 +93,17 @@ Pick Short / Normal / Long at the start of each session and the runner builds th
 
 > Keys and capos are the common guitar-chart versions, not always the studio recording. Move the capo to suit your voice — week 17 covers exactly how.
 
-**Practice**
+**Practice tools** — every one of these now uses the guitar synth
 - Timed session runner with auto-advance, chime, keyboard control (space / ← / →)
-- Metronome: tap tempo, 5 time signatures, subdivisions, accents, "2 & 4 only" groove mode, and an automatic speed trainer
-- Reference tuner in 6 tunings, plus A440
-- Fretboard note trainer with timed scoring
-- Interval ear trainer (ascending / descending / harmonic, 3 difficulty levels)
-- One-minute chord-change test — the highest-ROI beginner drill
+- **Metronome** — tap tempo, 5 time signatures, subdivisions, accents, "2 & 4 only" groove mode, automatic speed trainer, and an option to strum a chord along with the click
+- **Tuner** — real plucked reference tones in 6 tunings, with an adjustable A reference (432–446 Hz) if you're playing with someone else
+- **Chord library** — click any of the 47 diagrams to hear it as a down-strum, up-strum, picked arpeggio, or one string at a time (which is how you find a dead string in your own version)
+- **Strum pattern player** — 8 patterns, visual beat grid that lights up as it plays, adjustable tempo, count-in, loop
+- **Progression player** — 8 common progressions played as real strummed chords, to practise changes against
+- **Fretboard trainer** — hears the actual note you're being asked to name, right or wrong, plus a neck diagram of the position
+- **Ear trainer** — intervals played on real fretted string positions, ascending / descending / harmonic, 3 levels
+- **Chord change test** — with a pivot-finger diagram and a "hear both chords" reference
+- **Scale finder** — 11 scales in every key, laid out as a playable one-position shape on the neck, playable ascending and descending, plus its diatonic chords
 
 **Tracking**
 - Streak, best streak, total hours, weeks complete, pace vs. schedule
@@ -111,24 +132,24 @@ Pick Short / Normal / Long at the start of each session and the runner builds th
 Roughly in order of value-per-effort.
 
 **High value, easy**
-1. **Song chord-chart viewer** — paste lyrics with chords, get a scrolling, transposable chart with a capo calculator. The natural next step for the song library.
-2. **Practice-block favourites** — pin drills that are working and inject them into any session.
-3. **Progress photos / audio snippets** — attach a 30-second recording to a session log. Hearing week 1 next to week 20 is the most motivating thing in the whole app.
-4. **Printable weekly sheet** — one page per week for a music stand, no screen.
+1. **Extend the visual lessons into Phase 2** — weeks 9–20 (barre chords especially) would benefit most. The diagram and audio libraries are already built, so this is content work rather than engineering.
+2. **Song chord-chart viewer** — paste lyrics with chords, get a scrolling, transposable chart with a capo calculator. The natural next step for the song library.
+3. **Practice-block favourites** — pin drills that are working and inject them into any session.
+4. **Progress photos / audio snippets** — attach a 30-second recording to a session log. Hearing week 1 next to week 20 is the most motivating thing in the whole app.
+5. **Printable weekly sheet** — one page per week for a music stand, no screen.
 
 **High value, moderate**
-5. **Real pitch-detection tuner** — `getUserMedia` + autocorrelation gives a true needle tuner from the laptop mic. ~150 lines.
-6. **Backing-track generator** — Web Audio chord pads over a progression at a chosen tempo and key, for improvisation practice.
-7. **Spaced repetition for chords and notes** — resurface the shapes you get wrong more often, Anki-style.
-8. **Rhythm trainer** — tap along to a displayed rhythm; scores your timing accuracy in milliseconds.
+6. **Real pitch-detection tuner** — `getUserMedia` + autocorrelation gives a true needle tuner from the laptop mic. ~150 lines.
+7. **Backing-track generator** — Web Audio chord pads over a progression at a chosen tempo and key, for improvisation practice.
+8. **Spaced repetition for chords and notes** — resurface the shapes you get wrong more often, Anki-style.
+9. **Rhythm trainer** — tap along to a displayed rhythm; scores your timing accuracy in milliseconds.
 
 **Bigger projects**
-9. **PWA install + push** — a service worker and manifest would make it installable on your phone's home screen and let reminders fire without the app open. Now that it's hosted, this is the natural next step.
-10. **Chrome extension wrapper** — real OS notifications that fire without a tab open, plus a popup showing today's blocks. Needs `manifest.json`, a service worker and the `alarms` permission.
-10. **Interactive fretboard canvas** — click notes, overlay any scale or arpeggio, animate position shifts.
-11. **Tab/chord-chart importer** — parse a pasted Ultimate Guitar chart into structured sections.
-12. **PWA + offline install** — service worker and manifest so it installs as a desktop/phone app with background sync.
-13. **Sync across devices** — the only feature that genuinely needs a backend. A GitHub Gist or a small cloud KV store would do it.
+10. **PWA install + push** — a service worker and manifest would make it installable on your phone's home screen and let reminders fire without the app open. Now that it's hosted, this is the natural next step.
+11. **Chrome extension wrapper** — real OS notifications that fire without a tab open, plus a popup showing today's blocks. Needs `manifest.json`, a service worker and the `alarms` permission.
+12. **Interactive fretboard canvas** — click notes, overlay any scale or arpeggio, animate position shifts.
+13. **Tab/chord-chart importer** — parse a pasted Ultimate Guitar chart into structured sections.
+14. **Video demonstrations** — the one thing diagrams and synthesised audio can't replace is watching a real hand move. Short clips per technique would close that last gap.
 
 ---
 
@@ -136,7 +157,7 @@ Roughly in order of value-per-effort.
 
 - **Local by default.** Without an account, all data lives in your browser's `localStorage` and nothing is uploaded anywhere. Sign-in and sync are opt-in — see `SETUP.md`.
 - **Back up occasionally.** Tracker → *Export backup*. Clearing browser data wipes your progress otherwise.
-- **Audio needs one click.** Browsers block sound until you interact with the page — press any button once and audio works.
+- **Audio needs one click.** Browsers block sound until you interact with the page — press any play button once and audio works from then on.
 - **If a red banner appears** saying storage is blocked, run `start-local-server.bat` and use `http://localhost:8123` instead of opening the file directly.
 
 ## Structure
@@ -160,6 +181,10 @@ Guitar Claude/
     └── js/
         ├── curriculum.js   All 48 weeks of content
         ├── songs.js        The song library
+        ├── lessons.js      Visual lesson content (Phase 1 complete)
+        ├── lesson-ui.js    Lesson renderer
+        ├── visuals.js      SVG diagram library
+        ├── audio-guitar.js Plucked-string synthesis
         ├── firebase-config.js  Your Firebase keys (placeholders until you fill them)
         ├── sync.js         Auth + cross-device merge engine
         └── app.js          Storage, streaks, chords, audio

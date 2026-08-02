@@ -90,6 +90,10 @@
 <script src="assets/js/curriculum.js"></script>
 <script src="assets/js/songs.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/audio-guitar.js"></script>
+<script src="assets/js/visuals.js"></script>
+<script src="assets/js/lessons.js"></script>
+<script src="assets/js/lesson-ui.js"></script>
 <script src="assets/js/sync.js"></script>
 <script>
 const { Store, Progress, initPage, toast, chordSVG, CHORDS, esc } = Fretwork;
@@ -125,16 +129,23 @@ function render(){
 
   const list = CURRICULUM.blocksFor(w, mode);
   const done = Progress.weekBlocks(n);
-  document.getElementById("blocks").innerHTML = list.map(b=>`
-    <div class="block ${done.includes(b.name)?"done":""}" data-b="${esc(b.name)}">
-      <div class="block-check">✓</div>
-      <div class="block-body">
-        <div class="block-name">${esc(b.name)}<span class="tag" style="font-size:.66rem;padding:1px 7px">T${b.tier}</span></div>
-        ${b.what?`<div class="block-what">${esc(b.what)}</div>`:""}
-        ${b.how?`<div class="block-how">${esc(b.how)}</div>`:""}
+  document.getElementById("blocks").innerHTML = list.map(b=>{
+    const hasLesson = window.Lessons && Lessons.has(n, b.name);
+    return `
+    <div class="block-wrap">
+      <div class="block ${done.includes(b.name)?"done":""}" data-b="${esc(b.name)}">
+        <div class="block-check">✓</div>
+        <div class="block-body">
+          <div class="block-name">${esc(b.name)}<span class="tag" style="font-size:.66rem;padding:1px 7px">T${b.tier}</span></div>
+          ${b.what?`<div class="block-what">${esc(b.what)}</div>`:""}
+          ${b.how?`<div class="block-how">${esc(b.how)}</div>`:""}
+          ${hasLesson?`<button class="play-btn" style="margin-top:11px" data-lesson="${esc(b.name)}">📖 Show me how</button>`:""}
+        </div>
+        <div class="block-min">${b.min}m</div>
       </div>
-      <div class="block-min">${b.min}m</div>
-    </div>`).join("");
+      <div class="lesson-slot" data-slot="${esc(b.name)}" style="display:none"></div>
+    </div>`;
+  }).join("");
 
   document.getElementById("bcount").textContent = list.filter(b=>done.includes(b.name)).length;
   document.getElementById("btotal").textContent = list.length;
@@ -168,6 +179,20 @@ function render(){
 }
 
 document.getElementById("blocks").onclick = e=>{
+  /* "Show me how" expands the visual lesson without ticking the block */
+  const lb = e.target.closest("[data-lesson]");
+  if(lb){
+    e.stopPropagation();
+    const name = lb.dataset.lesson;
+    const slot = document.querySelector(`[data-slot="${CSS.escape(name)}"]`);
+    const open = slot.style.display !== "none";
+    if(open){ slot.style.display="none"; slot.innerHTML=""; lb.textContent="📖 Show me how"; return; }
+    slot.style.display = "block";
+    LessonUI.mount(slot, Lessons.get(n, name));
+    lb.textContent = "▲ Hide";
+    slot.scrollIntoView({behavior:"smooth", block:"nearest"});
+    return;
+  }
   const b = e.target.closest("[data-b]"); if(!b) return;
   Progress.toggleBlock(n, b.dataset.b);
   render();
