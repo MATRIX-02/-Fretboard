@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This Week — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="row-between wrap-flex">
+      <div>
+        <div class="eyebrow" id="eyebrow">Week</div>
+        <h1 id="title">—</h1>
+        <p class="sub" id="focus"></p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-sm" id="prev">← Prev</button>
+        <button class="btn btn-sm" id="next">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g-side">
+    <!-- left: blocks -->
+    <div>
+      <div class="card mb">
+        <div class="row-between wrap-flex mb">
+          <h2 style="margin:0">Practice blocks</h2>
+          <div class="btn-row" id="mode-picker">
+            <button class="btn btn-sm" data-mode="short">Short</button>
+            <button class="btn btn-sm" data-mode="normal">Normal</button>
+            <button class="btn btn-sm" data-mode="long">Long</button>
+          </div>
+        </div>
+        <p class="small muted mb">Tick blocks as you do them. Ticks reset when you start a fresh session on the Practice page.</p>
+        <div id="blocks"></div>
+        <div class="row-between mt-lg">
+          <div class="small dim"><span id="bcount">0</span> of <span id="btotal">0</span> · <span id="bmin">0</span> min planned</div>
+          <a class="btn btn-primary" href="practice.html">Run this as a timed session →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Weekly practice grid</h2>
+        <p class="small muted mb">A suggested 7-day shape. Rest days matter — your hands adapt while you're not playing.</p>
+        <table>
+          <thead><tr><th>Day</th><th>Intensity</th><th>Emphasis</th></tr></thead>
+          <tbody id="grid"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- right: meta -->
+    <div>
+      <div class="card mb">
+        <div class="stat-lab mb">Skills this week</div>
+        <div class="row wrap-flex" style="gap:7px" id="skills"></div>
+      </div>
+      <div class="card mb">
+        <div class="stat-lab mb">Theory</div>
+        <p class="small dim" id="theory"></p>
+      </div>
+      <div class="card mb">
+        <div class="row-between mb"><div class="stat-lab" style="margin:0">Song target</div><a href="songs.html" class="tiny">All songs →</a></div>
+        <p class="small dim" id="song"></p>
+        <div id="song-picks" class="mt"></div>
+      </div>
+      <div class="card mb">
+        <div class="stat-lab mb">Chords in play</div>
+        <div class="grid g2" id="chords" style="gap:8px"></div>
+      </div>
+      <div class="card">
+        <div class="stat-lab mb">Milestone</div>
+        <div class="callout" id="milestone"></div>
+        <button class="btn btn-primary mt" style="width:100%" id="complete">Mark week complete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/songs.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, toast, chordSVG, CHORDS, esc } = Fretwork;
+initPage("week.html");
+
+let n = +(new URLSearchParams(location.search).get("w") || Store.load().currentWeek);
+n = Math.max(1, Math.min(48, n));
+
+const DAY_GRID = [
+  ["Monday","Standard","Core drills + song work"],
+  ["Tuesday","Standard","Core drills + theory block"],
+  ["Wednesday","Short","Core only — keep the streak"],
+  ["Thursday","Standard","Core drills + application"],
+  ["Friday","Long","Everything + creative/recording block"],
+  ["Saturday","Long","Full session + repertoire play-through"],
+  ["Sunday","Rest or short","Listen, review notes, or 15 min of fun playing"],
+];
+
+function render(){
+  const w = CURRICULUM.week(n), p = CURRICULUM.phaseOf(n), s = Store.load();
+  const mode = s.settings.defaultMode;
+
+  document.getElementById("eyebrow").innerHTML = `${p.icon} Phase ${p.id} · ${p.name} — Week ${n} of 48`;
+  document.getElementById("title").textContent = w.title;
+  document.getElementById("focus").textContent = w.focus;
+  document.getElementById("theory").textContent = w.theory;
+  document.getElementById("song").textContent = w.song;
+  document.getElementById("milestone").textContent = w.milestone;
+  document.getElementById("skills").innerHTML = w.skills.map(k=>`<span class="tag">${esc(k)}</span>`).join("");
+
+  document.querySelectorAll("#mode-picker .btn").forEach(b=>
+    b.classList.toggle("btn-primary", b.dataset.mode===mode));
+
+  const list = CURRICULUM.blocksFor(w, mode);
+  const done = Progress.weekBlocks(n);
+  document.getElementById("blocks").innerHTML = list.map(b=>`
+    <div class="block ${done.includes(b.name)?"done":""}" data-b="${esc(b.name)}">
+      <div class="block-check">✓</div>
+      <div class="block-body">
+        <div class="block-name">${esc(b.name)}<span class="tag" style="font-size:.66rem;padding:1px 7px">T${b.tier}</span></div>
+        ${b.what?`<div class="block-what">${esc(b.what)}</div>`:""}
+        ${b.how?`<div class="block-how">${esc(b.how)}</div>`:""}
+      </div>
+      <div class="block-min">${b.min}m</div>
+    </div>`).join("");
+
+  document.getElementById("bcount").textContent = list.filter(b=>done.includes(b.name)).length;
+  document.getElementById("btotal").textContent = list.length;
+  document.getElementById("bmin").textContent = CURRICULUM.minutes(w, mode);
+
+  document.getElementById("grid").innerHTML = DAY_GRID.map(([d,i,e])=>
+    `<tr><td><strong>${d}</strong></td><td><span class="tag">${i}</span></td><td class="dim">${e}</td></tr>`).join("");
+
+  /* chords relevant to this week — matched from skills text */
+  const found = Object.keys(CHORDS).filter(c=>{
+    const hay = (w.skills.join(" ")+" "+w.title+" "+w.focus);
+    return new RegExp("(^|[^A-Za-z#/7])"+c.replace(/[#/]/g,"\\$&")+"([^A-Za-z0-9#/]|$)").test(hay);
+  }).slice(0,6);
+  const cbox = document.getElementById("chords");
+  cbox.innerHTML = found.length
+    ? found.map(c=>`<div class="chord-tile">${chordSVG(c,0.85)}</div>`).join("")
+    : `<p class="small muted" style="grid-column:1/-1">No specific new chords this week — see the <a href="tools.html#chords">chord library</a>.</p>`;
+
+  /* song suggestions that become playable around this week */
+  const picks = (window.SONGLIB ? SONGLIB.forWeek(n).slice(0,3) : []);
+  document.getElementById("song-picks").innerHTML = picks.length
+    ? `<div class="stat-lab mb" style="margin-top:12px">${picks[0].week<=n?"Try these now":"Coming up"}</div>` + picks.map(x=>`
+        <a href="songs.html" style="display:block;padding:8px 0;border-top:1px solid var(--border-soft)">
+          <div class="small" style="font-weight:600;color:var(--text)">${esc(x.t)}</div>
+          <div class="tiny muted">${esc(x.a)} · ${esc(x.key)}${x.capo?" capo "+x.capo:""} · ${x.ch.join(" ")}</div>
+        </a>`).join("")
+    : "";
+
+  document.getElementById("complete").textContent =
+    s.weekDone.includes(n) ? "✓ Completed — undo" : "Mark week complete";
+}
+
+document.getElementById("blocks").onclick = e=>{
+  const b = e.target.closest("[data-b]"); if(!b) return;
+  Progress.toggleBlock(n, b.dataset.b);
+  render();
+};
+document.getElementById("mode-picker").onclick = e=>{
+  const b = e.target.closest("[data-mode]"); if(!b) return;
+  Store.update(x=>x.settings.defaultMode=b.dataset.mode); render();
+};
+/* replaceState throws on file:// origins, so it must never block the re-render */
+function setURL(){ try{ history.replaceState(0,"","?w="+n); }catch(e){} }
+document.getElementById("prev").onclick = ()=>{ if(n>1){ n--; setURL(); render(); } };
+document.getElementById("next").onclick = ()=>{ if(n<48){ n++; setURL(); render(); } };
+document.getElementById("complete").onclick = ()=>{
+  const s = Store.load();
+  if(s.weekDone.includes(n)){ Progress.uncompleteWeek(n); toast("Marked incomplete"); }
+  else { Progress.completeWeek(n); toast("Week "+n+" complete 🎉"); }
+  render();
+};
+render();
+</script>
+</body>
+</html>

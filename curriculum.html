@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curriculum — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">The index</div>
+    <h1>48 weeks, beginner to advanced</h1>
+    <p class="sub">Four phases. Each week has a focus, a set of modular practice blocks, a theory idea, a song target and one measurable milestone. Blocks are tiered so a 15-minute day and a 90-minute day both count.</p>
+  </div>
+
+  <!-- how it works -->
+  <div class="card pad-lg">
+    <h2>How the daily plan works</h2>
+    <div class="grid g3 mt">
+      <div>
+        <span class="tag tag-accent">Tier 1 — Core</span>
+        <p class="small dim mt" style="margin-top:8px">The non-negotiables: warm-up, tuning, and the week's single most important drill. Roughly <strong>15–25 minutes</strong>. On a bad day, do only this and the streak still counts.</p>
+      </div>
+      <div>
+        <span class="tag">Tier 2 — Standard</span>
+        <p class="small dim mt" style="margin-top:8px">Adds application drills and song work. Total <strong>40–55 minutes</strong>. This is the pace the 48-week timeline assumes.</p>
+      </div>
+      <div>
+        <span class="tag">Tier 3 — Deep</span>
+        <p class="small dim mt" style="margin-top:8px">Adds creative work, recording, and repertoire. Total <strong>75–95 minutes</strong>. Use on weekends or when you're in the mood.</p>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="callout">
+      <strong>Realistic timeline.</strong> At 5 sessions a week you finish in about 11 months. At 7 sessions a week, around 9 months — the extra speed comes from faster physical adaptation, not from skipping content. Weeks 8, 20, 34 and 48 are checkpoints: don't move past one until you've hit its milestone.
+    </div>
+  </div>
+
+  <!-- summary stats -->
+  <div class="grid g4 mt-lg">
+    <div class="card stat"><div class="stat-val">48</div><div class="stat-lab">Weeks</div></div>
+    <div class="card stat"><div class="stat-val">4</div><div class="stat-lab">Phases</div></div>
+    <div class="card stat"><div class="stat-val" id="tot-blocks">—</div><div class="stat-lab">Practice blocks</div></div>
+    <div class="card stat"><div class="stat-val" id="tot-hours">—</div><div class="stat-lab">Hours (standard pace)</div></div>
+  </div>
+
+  <!-- filter -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Full index</h2>
+      <div class="btn-row">
+        <button class="btn btn-sm btn-primary" data-filter="all">All</button>
+        <button class="btn btn-sm" data-filter="todo">Remaining</button>
+        <button class="btn btn-sm" data-filter="done">Completed</button>
+      </div>
+    </div>
+    <div id="phases"></div>
+  </div>
+</div>
+
+<!-- week detail modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, toast, esc } = Fretwork;
+initPage("curriculum.html");
+
+let filter = "all";
+
+document.getElementById("tot-blocks").textContent =
+  CURRICULUM.weeks.reduce((a,w)=>a+w.blocks.length,0);
+document.getElementById("tot-hours").textContent =
+  Math.round(CURRICULUM.weeks.reduce((a,w)=>a+CURRICULUM.minutes(w,"normal")*5,0)/60) + "h";
+
+function render(){
+  const s = Store.load();
+  document.getElementById("phases").innerHTML = CURRICULUM.phases.map(p=>{
+    const weeks = CURRICULUM.weeksIn(p.id).filter(w=>{
+      const done = s.weekDone.includes(w.n);
+      return filter==="all" || (filter==="done"&&done) || (filter==="todo"&&!done);
+    });
+    if(!weeks.length) return "";
+    const total = p.weeks[1]-p.weeks[0]+1;
+    const done = s.weekDone.filter(n=>n>=p.weeks[0]&&n<=p.weeks[1]).length;
+    return `
+    <div class="section" id="phase${p.id}">
+      <div class="card pad-lg mb" style="border-left:3px solid var(--p${p.id})">
+        <div class="row-between wrap-flex">
+          <div style="flex:1;min-width:250px">
+            <span class="tag tag-p${p.id}">${p.icon} Phase ${p.id} · ${p.range}</span>
+            <h2 style="margin:11px 0 4px;font-size:1.42rem">${p.name}</h2>
+            <p class="dim small" style="max-width:60ch">${esc(p.goal)}</p>
+            <p class="small mt" style="color:var(--p${p.id})"><strong>You'll come out able to:</strong> ${esc(p.outcome)}</p>
+          </div>
+          <div style="min-width:150px">
+            <div class="row-between tiny muted mb">${done} of ${total} weeks</div>
+            <div class="bar p${p.id}"><i style="width:${(done/total*100).toFixed(0)}%"></i></div>
+          </div>
+        </div>
+      </div>
+      ${weeks.map(w=>{
+        const d = s.weekDone.includes(w.n);
+        const cur = s.currentWeek===w.n;
+        return `<div class="week-row ${d?"done":""} ${cur?"current":""}" data-week="${w.n}">
+          <div class="week-num">${d?"✓":w.n}</div>
+          <div>
+            <div class="week-title">${esc(w.title)} ${w.checkpoint?'<span class="tag tag-accent" style="margin-left:6px">Checkpoint</span>':""}${cur?'<span class="tag tag-accent" style="margin-left:6px">Current</span>':""}</div>
+            <div class="week-focus">${esc(w.focus)}</div>
+          </div>
+          <div class="tiny muted mono" style="text-align:right">
+            ${CURRICULUM.minutes(w,"short")}–${CURRICULUM.minutes(w,"long")} min<br>
+            <span style="opacity:.7">${w.blocks.length} blocks</span>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }).join("");
+}
+
+document.querySelector("[data-filter]").parentElement.onclick = e=>{
+  const b = e.target.closest("[data-filter]"); if(!b) return;
+  filter = b.dataset.filter;
+  b.parentElement.querySelectorAll(".btn").forEach(x=>x.classList.toggle("btn-primary", x===b));
+  render();
+};
+
+document.getElementById("phases").onclick = e=>{
+  const row = e.target.closest("[data-week]"); if(!row) return;
+  openWeek(+row.dataset.week);
+};
+
+function openWeek(n){
+  const w = CURRICULUM.week(n), p = CURRICULUM.phaseOf(n), s = Store.load();
+  const done = s.weekDone.includes(n);
+  document.getElementById("modal-body").innerHTML = `
+    <div class="row-between mb">
+      <span class="tag tag-p${p.id}">${p.icon} Week ${n} · ${p.name}</span>
+      <button class="btn btn-sm" id="x">✕</button>
+    </div>
+    <h2 style="font-size:1.5rem">${esc(w.title)}</h2>
+    <p class="dim">${esc(w.focus)}</p>
+
+    <div class="row wrap-flex mt" style="gap:7px">
+      ${w.skills.map(k=>`<span class="tag">${esc(k)}</span>`).join("")}
+    </div>
+
+    <div class="divider"></div>
+    <h3 class="mb">Daily blocks</h3>
+    ${w.blocks.map(b=>`
+      <div class="block">
+        <div class="block-body">
+          <div class="block-name">${esc(b.name)}
+            <span class="tag ${b.tier===1?"tag-accent":""}" style="font-size:.68rem;padding:1px 7px">Tier ${b.tier}</span>
+          </div>
+          ${b.what?`<div class="block-what">${esc(b.what)}</div>`:""}
+          ${b.how?`<div class="block-how">${esc(b.how)}</div>`:""}
+        </div>
+        <div class="block-min">${b.min}m</div>
+      </div>`).join("")}
+
+    <div class="divider"></div>
+    <div class="grid g2">
+      <div><div class="stat-lab mb">Theory</div><p class="small dim">${esc(w.theory)}</p></div>
+      <div><div class="stat-lab mb">Song target</div><p class="small dim">${esc(w.song)}</p></div>
+    </div>
+    <div class="callout mt-lg"><strong>Milestone:</strong> ${esc(w.milestone)}</div>
+
+    <div class="btn-row mt-lg">
+      <button class="btn btn-primary" id="setcur">Make this my current week</button>
+      <button class="btn" id="toggle">${done?"Mark not done":"Mark week complete"}</button>
+    </div>`;
+  document.getElementById("modal").classList.add("show");
+  document.getElementById("x").onclick = close;
+  document.getElementById("setcur").onclick = ()=>{
+    Store.update(x=>x.currentWeek=n); toast("Week "+n+" is now your current week"); close(); render();
+  };
+  document.getElementById("toggle").onclick = ()=>{
+    done ? Progress.uncompleteWeek(n) : Progress.completeWeek(n);
+    toast(done?"Marked incomplete":"Week "+n+" complete 🎉"); close(); render();
+  };
+}
+function close(){ document.getElementById("modal").classList.remove("show"); }
+document.getElementById("modal").onclick = e=>{ if(e.target.id==="modal") close(); };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") close(); });
+
+render();
+if(location.hash.startsWith("#phase")) setTimeout(()=>document.querySelector(location.hash)?.scrollIntoView(),80);
+</script>
+</body>
+</html>

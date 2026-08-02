@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+<style>
+  .auth-card { max-width:460px; margin:0 auto; }
+  .gbtn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%;
+          padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+          background:#fff; color:#1f1f1f; font-weight:650; font-size:.93rem;
+          font-family:inherit; cursor:pointer; transition:.14s; }
+  .gbtn:hover { background:#f1f1f1; }
+  .or { display:flex; align-items:center; gap:12px; color:var(--text-3); font-size:.78rem;
+        margin:20px 0; text-transform:uppercase; letter-spacing:.1em; }
+  .or::before, .or::after { content:""; flex:1; height:1px; background:var(--border-soft); }
+  .tabs { display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:var(--radius-sm); margin-bottom:18px; }
+  .tabs button { flex:1; padding:8px; border:none; border-radius:7px; background:transparent;
+                 color:var(--text-2); font-family:inherit; font-size:.87rem; font-weight:600; cursor:pointer; }
+  .tabs button.on { background:var(--surface-3); color:var(--text); }
+  .err { color:var(--bad); font-size:.85rem; margin-top:10px; min-height:20px; }
+  .ok  { color:var(--good); font-size:.85rem; margin-top:10px; min-height:20px; }
+  code { background:var(--surface-2); padding:2px 6px; border-radius:5px; font-size:.85em; }
+  pre { background:var(--bg-2); border:1px solid var(--border-soft); border-radius:var(--radius-sm);
+        padding:14px; overflow-x:auto; font-size:.8rem; line-height:1.55; }
+</style>
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+
+  <!-- ============ NOT CONFIGURED ============ -->
+  <div id="setup-needed" style="display:none">
+    <div class="page-head">
+      <div class="eyebrow">Cross-device access</div>
+      <h1>Set up your account backend</h1>
+      <p class="sub">Fretwork works fully offline without this. Connecting Firebase adds sign-in and syncs your progress to every device you use — phone, laptop, anywhere.</p>
+    </div>
+
+    <div class="card pad-lg mb">
+      <h2>What you get</h2>
+      <div class="grid g3 mt">
+        <div><span class="tag tag-accent">Sign in</span><p class="small dim mt" style="margin-top:8px">Google one-tap, or email and password. Guest mode still works with no account at all.</p></div>
+        <div><span class="tag">Sync</span><p class="small dim mt" style="margin-top:8px">Practise on your phone in the morning, open your laptop at night, and the streak is already there.</p></div>
+        <div><span class="tag">Safe merging</span><p class="small dim mt" style="margin-top:8px">Devices are merged, never overwritten. Two devices used on the same day keep both sessions.</p></div>
+      </div>
+    </div>
+
+    <div class="card pad-lg">
+      <h2>Setup — about 15 minutes, free</h2>
+      <ol class="dim" style="padding-left:20px;line-height:2.05;font-size:.93rem">
+        <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> and create a project (turn Analytics off — you don't need it).</li>
+        <li><strong>Build → Authentication → Get started.</strong> Enable <code>Email/Password</code>, <code>Google</code>, and <code>Anonymous</code>.</li>
+        <li><strong>Build → Firestore Database → Create database</strong>, production mode, pick the region closest to you.</li>
+        <li>In <strong>Firestore → Rules</strong>, paste the rules below and publish.</li>
+        <li><strong>Project settings ⚙ → Your apps → Web (&lt;/&gt;)</strong>. Register the app, then copy the <code>firebaseConfig</code> values it shows you.</li>
+        <li>Paste those values into <code>assets/js/firebase-config.js</code> and reload this page.</li>
+      </ol>
+
+      <div class="divider"></div>
+      <h3 class="mb">Firestore security rules</h3>
+      <p class="small dim mb">These make each user's data readable and writable only by them. Without them your database is open to anyone.</p>
+      <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /fretwork_users/{userId} {
+      allow read, write: if request.auth != null
+                         &amp;&amp; request.auth.uid == userId;
+    }
+  }
+}</pre>
+
+      <div class="divider"></div>
+      <div class="callout">
+        <strong>Hosting on GitHub Pages.</strong> Once your site is live at <code>yourname.github.io/fretwork</code>, add that domain in Firebase under <strong>Authentication → Settings → Authorized domains</strong>, or Google sign-in will be rejected. Full deployment steps are in <code>SETUP.md</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SIGNED OUT ============ -->
+  <div id="signed-out" style="display:none">
+    <div class="page-head center">
+      <div class="eyebrow">Fretwork</div>
+      <h1>Sign in to sync</h1>
+      <p class="sub" style="margin:8px auto 0">Your progress follows you to any device. Or keep playing as a guest — you can attach an account later without losing anything.</p>
+    </div>
+
+    <div class="card pad-lg auth-card">
+      <button class="gbtn" id="g-signin">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.1z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.6-3.9-12.4-9.1H4.3v5.7C7.9 41 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.1c-.5-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.2 2 20.5 2 24s.8 6.8 2.3 9.8l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.3 30 2 24 2 15.4 2 7.9 7 4.3 14.2l7.3 5.7c1.8-5.2 6.6-9.1 12.4-9.1z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="or">or</div>
+
+      <div class="tabs">
+        <button class="on" data-tab="in">Sign in</button>
+        <button data-tab="up">Create account</button>
+      </div>
+
+      <div class="field"><label>Email</label><input type="email" id="email" autocomplete="email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="pw" autocomplete="current-password" placeholder="At least 6 characters"></div>
+      <button class="btn btn-primary" style="width:100%" id="email-go">Sign in</button>
+      <div class="row-between mt">
+        <button class="btn btn-sm btn-ghost" id="forgot" style="border:none;padding:4px 0">Forgot password?</button>
+        <button class="btn btn-sm btn-ghost" id="guest" style="border:none;padding:4px 0">Continue as guest →</button>
+      </div>
+      <div class="err" id="msg"></div>
+
+      <div class="divider"></div>
+      <p class="tiny muted">Your practice data is stored under your own user ID and is readable only by you. Nothing is shared, sold, or visible to anyone else.</p>
+    </div>
+  </div>
+
+  <!-- ============ SIGNED IN ============ -->
+  <div id="signed-in" style="display:none">
+    <div class="page-head">
+      <div class="eyebrow">Account</div>
+      <h1 id="who">—</h1>
+      <p class="sub" id="who-sub"></p>
+    </div>
+
+    <div class="grid g-side">
+      <div>
+        <div class="card pad-lg mb">
+          <div class="row-between wrap-flex mb">
+            <h2 style="margin:0">Sync</h2>
+            <span class="tag" id="sync-tag">—</span>
+          </div>
+          <div class="grid g3 mb">
+            <div class="stat"><div class="stat-val" id="c-sessions">0</div><div class="stat-lab">Sessions</div></div>
+            <div class="stat"><div class="stat-val" id="c-days">0</div><div class="stat-lab">Practice days</div></div>
+            <div class="stat"><div class="stat-val" id="c-songs">0</div><div class="stat-lab">Songs</div></div>
+          </div>
+          <p class="small dim mb" id="last-sync"></p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="sync-now">↻ Sync now</button>
+            <button class="btn" id="export2">⬇ Download backup</button>
+          </div>
+        </div>
+
+        <div class="card pad-lg mb" id="upgrade-card" style="display:none">
+          <h2>You're a guest</h2>
+          <p class="small dim mb">Guest data lives on this device and this browser only. Attach a real account and everything you've done so far comes with you — nothing is lost.</p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="link-google">Attach Google account</button>
+          </div>
+          <div class="divider"></div>
+          <div class="grid g2">
+            <div class="field" style="margin:0"><label>Email</label><input type="email" id="link-email"></div>
+            <div class="field" style="margin:0"><label>Password</label><input type="password" id="link-pw"></div>
+          </div>
+          <button class="btn mt" id="link-email-go">Attach email account</button>
+          <div class="err" id="link-msg"></div>
+        </div>
+
+        <div class="card pad-lg">
+          <h2>Use it on your other devices</h2>
+          <ol class="dim small" style="padding-left:20px;line-height:2">
+            <li>Open the same site URL on your phone or other computer.</li>
+            <li>Sign in with the same account.</li>
+            <li>Your weeks, streak, sessions, songs and goals appear within a second or two.</li>
+          </ol>
+          <div class="callout mt">
+            <strong>How conflicts are handled.</strong> Devices are merged, not overwritten — practice days, sessions, songs and completed weeks are combined from both sides. Only preferences (reminder time, session length) take the most recently changed device's value.
+          </div>
+          <div class="mt-lg">
+            <p class="small dim mb">Add this page to your phone's home screen for an app-like shortcut: Share → <em>Add to Home Screen</em> on iOS, or ⋮ → <em>Add to Home screen</em> on Android.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb">
+          <div class="stat-lab mb">Signed in with</div>
+          <p id="method" style="font-weight:600"></p>
+          <p class="tiny muted mt" id="uid"></p>
+        </div>
+        <div class="card mb">
+          <div class="stat-lab mb">Session length preference</div>
+          <div class="btn-row" id="mode-pick">
+            <button class="btn btn-sm" data-mode="short">Short</button>
+            <button class="btn btn-sm" data-mode="normal">Normal</button>
+            <button class="btn btn-sm" data-mode="long">Long</button>
+          </div>
+        </div>
+        <div class="card mb">
+          <div class="stat-lab mb">Display name</div>
+          <input type="text" id="disp-name" placeholder="Shown on your dashboard">
+          <button class="btn btn-sm mt" id="save-name">Save</button>
+        </div>
+        <div class="card">
+          <div class="stat-lab mb">Danger zone</div>
+          <div class="btn-row" style="flex-direction:column;align-items:stretch">
+            <button class="btn btn-sm" id="signout">Sign out</button>
+            <button class="btn btn-sm" id="del-cloud" style="color:var(--bad)">Delete cloud copy</button>
+          </div>
+          <p class="tiny muted mt">Signing out leaves your local copy on this device untouched.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/songs.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, toast, todayISO, esc } = Fretwork;
+initPage("account.html");
+const $ = id=>document.getElementById(id);
+
+let tab = "in";
+
+function show(which){
+  ["setup-needed","signed-out","signed-in"].forEach(id=>$(id).style.display = id===which?"block":"none");
+}
+
+function paint(){
+  if(!Sync.configured() || !Sync.sdkLoaded()){ show("setup-needed"); return; }
+  const u = Sync.user;
+  if(!u){ show("signed-out"); return; }
+
+  show("signed-in");
+  const s = Store.load();
+  $("who").textContent = u.isAnonymous ? "Guest session" : (u.displayName || u.email || "Your account");
+  $("who-sub").textContent = u.isAnonymous
+    ? "Your work is saved and synced under a temporary identity. Attach an account below to keep it permanently."
+    : "Signed in. Everything you do is synced to your other devices automatically.";
+  $("method").textContent = u.isAnonymous ? "Guest (anonymous)"
+    : (u.providerData[0]?.providerId === "google.com" ? "Google — " + u.email : "Email — " + u.email);
+  $("uid").textContent = "ID " + u.uid.slice(0,12) + "…";
+  $("upgrade-card").style.display = u.isAnonymous ? "block" : "none";
+
+  $("c-sessions").textContent = s.sessions.length;
+  $("c-days").textContent = new Set(s.practiceDays).size;
+  $("c-songs").textContent = s.songs.length;
+  $("sync-tag").textContent = Sync.status;
+  $("sync-tag").className = "tag " + (Sync.status==="Synced" ? "tag-done" : "");
+  $("last-sync").textContent = Sync.lastSyncedAt
+    ? "Last synced " + new Date(Sync.lastSyncedAt).toLocaleTimeString()
+    : "Not synced yet this session.";
+  $("disp-name").value = s.settings.name || "";
+  document.querySelectorAll("#mode-pick .btn").forEach(b=>
+    b.classList.toggle("btn-primary", b.dataset.mode===s.settings.defaultMode));
+}
+
+window.addEventListener("fretwork:auth", paint);
+window.addEventListener("fretwork:synced", paint);
+setTimeout(paint, 60);
+setTimeout(paint, 900);
+
+/* ---------- signed out actions ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  tab = b.dataset.tab;
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on", x===b));
+  $("email-go").textContent = tab==="in" ? "Sign in" : "Create account";
+  $("pw").autocomplete = tab==="in" ? "current-password" : "new-password";
+  $("msg").textContent = "";
+});
+
+function fail(el, e){ el.className="err"; el.textContent = Sync.readableError(e); }
+function good(el, t){ el.className="ok"; el.textContent = t; }
+
+$("g-signin").onclick = async ()=>{
+  $("msg").textContent="Opening Google…";
+  try { await Sync.Auth.google(); } catch(e){ fail($("msg"), e); }
+};
+$("email-go").onclick = async ()=>{
+  const e = $("email").value.trim(), p = $("pw").value;
+  if(!e || !p) return fail($("msg"), {message:"Enter an email and password."});
+  $("msg").textContent = "Working…";
+  try {
+    if(tab==="in") await Sync.Auth.emailSignIn(e,p);
+    else await Sync.Auth.emailSignUp(e,p);
+  } catch(err){ fail($("msg"), err); }
+};
+$("pw").onkeydown = e=>{ if(e.key==="Enter") $("email-go").click(); };
+$("forgot").onclick = async ()=>{
+  const e = $("email").value.trim();
+  if(!e) return fail($("msg"), {message:"Enter your email above first."});
+  try { await Sync.Auth.resetPassword(e); good($("msg"), "Reset link sent to "+e); }
+  catch(err){ fail($("msg"), err); }
+};
+$("guest").onclick = async ()=>{
+  try { await Sync.Auth.guest(); } catch(e){ fail($("msg"), e); }
+};
+
+/* ---------- signed in actions ---------- */
+$("sync-now").onclick = async ()=>{ await Sync.reconcile("manual"); toast("Synced"); paint(); };
+$("export2").onclick = ()=>{
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([Store.export()],{type:"application/json"}));
+  a.download=`fretwork-backup-${todayISO()}.json`; a.click();
+  toast("Backup downloaded");
+};
+$("link-google").onclick = async ()=>{
+  try { await Sync.Auth.google(); toast("Account attached"); paint(); }
+  catch(e){ fail($("link-msg"), e); }
+};
+$("link-email-go").onclick = async ()=>{
+  const e=$("link-email").value.trim(), p=$("link-pw").value;
+  if(!e||!p) return fail($("link-msg"), {message:"Enter an email and password."});
+  try { await Sync.Auth.emailSignUp(e,p); toast("Account attached"); paint(); }
+  catch(err){ fail($("link-msg"), err); }
+};
+$("signout").onclick = async ()=>{ await Sync.Auth.signOut(); toast("Signed out"); paint(); };
+$("del-cloud").onclick = async ()=>{
+  if(!confirm("Delete the cloud copy of your data? Your local copy on this device stays. Other devices will keep their own copies until they next sync.")) return;
+  await Sync.Auth.deleteCloudData(); toast("Cloud copy deleted"); paint();
+};
+$("mode-pick").onclick = e=>{
+  const b=e.target.closest("[data-mode]"); if(!b) return;
+  Store.update(s=>s.settings.defaultMode=b.dataset.mode); paint(); toast("Saved");
+};
+$("save-name").onclick = ()=>{
+  Store.update(s=>s.settings.name=$("disp-name").value.trim()); toast("Saved");
+};
+</script>
+</body>
+</html>

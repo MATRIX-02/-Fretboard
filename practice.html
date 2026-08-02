@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice Session — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <!-- ============ SETUP ============ -->
+  <div id="setup">
+    <div class="page-head">
+      <div class="eyebrow" id="eyebrow">Session</div>
+      <h1 id="title">—</h1>
+      <p class="sub">Pick your length. The runner walks you through each block with a timer, so you never have to decide what to do next mid-session.</p>
+    </div>
+
+    <div class="grid g3">
+      <div class="card mode-card" data-mode="short">
+        <span class="tag tag-accent">Tier 1</span>
+        <h2 style="margin:12px 0 4px">Short</h2>
+        <div class="stat-val" id="v-short">—</div>
+        <p class="small dim mt">Core only. The version you do when you're tired, travelling, or nearly out of time. It still counts.</p>
+      </div>
+      <div class="card mode-card" data-mode="normal">
+        <span class="tag">Tier 1 + 2</span>
+        <h2 style="margin:12px 0 4px">Normal</h2>
+        <div class="stat-val" id="v-normal">—</div>
+        <p class="small dim mt">The standard day. Core drills plus application and song work. This is what the 48-week timeline assumes.</p>
+      </div>
+      <div class="card mode-card" data-mode="long">
+        <span class="tag">All tiers</span>
+        <h2 style="margin:12px 0 4px">Long</h2>
+        <div class="stat-val" id="v-long">—</div>
+        <p class="small dim mt">Deep work: creative blocks, recording, repertoire. Best on weekends.</p>
+      </div>
+    </div>
+
+    <div class="card mt-lg">
+      <h2>Today's blocks</h2>
+      <div id="preview" class="mt"></div>
+      <div class="btn-row mt-lg">
+        <button class="btn btn-primary btn-lg" id="go">▶  Start session</button>
+        <button class="btn btn-lg" id="skip-timer">Log without timer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RUNNER ============ -->
+  <div id="runner" style="display:none">
+    <div class="row-between wrap-flex mb">
+      <div>
+        <div class="eyebrow" id="r-eyebrow"></div>
+        <h1 id="r-block" style="font-size:1.75rem">—</h1>
+      </div>
+      <button class="btn btn-sm" id="quit">End session</button>
+    </div>
+
+    <div class="card pad-lg center">
+      <div class="timer-face" id="clock">00:00</div>
+      <div class="bar mt-lg" style="max-width:520px;margin:22px auto 0"><i id="tbar" style="width:0%"></i></div>
+      <div class="btn-row mt-lg" style="justify-content:center">
+        <button class="btn btn-lg" id="back">←</button>
+        <button class="btn btn-primary btn-lg" id="pause" style="min-width:140px">Pause</button>
+        <button class="btn btn-lg" id="fwd">Skip →</button>
+      </div>
+      <div class="row mt-lg" style="justify-content:center;gap:16px">
+        <label class="check-row" style="padding:0"><input type="checkbox" id="autoadv" checked> <span class="small dim">Auto-advance</span></label>
+        <label class="check-row" style="padding:0"><input type="checkbox" id="chime" checked> <span class="small dim">Chime on finish</span></label>
+      </div>
+    </div>
+
+    <div class="grid g-side mt-lg">
+      <div class="card">
+        <div class="stat-lab mb">What to do</div>
+        <p id="r-what" style="font-size:1.02rem"></p>
+        <div class="callout mt" id="r-how"></div>
+      </div>
+      <div class="card">
+        <div class="stat-lab mb">Session queue</div>
+        <div id="queue"></div>
+      </div>
+    </div>
+
+    <!-- inline metronome -->
+    <div class="card mt-lg">
+      <div class="row-between wrap-flex">
+        <div class="row" style="gap:14px">
+          <button class="btn" id="mstart">🥁 Metronome</button>
+          <div class="mono" style="font-size:1.3rem;min-width:74px" id="mbpm">70 bpm</div>
+          <input type="range" id="mslide" min="40" max="200" value="70" style="width:190px">
+        </div>
+        <div class="beat-dots" id="mdots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div id="summary" style="display:none">
+    <div class="page-head center">
+      <div style="font-size:3rem">🎉</div>
+      <h1>Session complete</h1>
+      <p class="sub" style="margin-left:auto;margin-right:auto" id="sum-line"></p>
+    </div>
+    <div class="card pad-lg" style="max-width:620px;margin:0 auto">
+      <div class="grid g3 mb">
+        <div class="stat center"><div class="stat-val" id="sum-min">0</div><div class="stat-lab">Minutes</div></div>
+        <div class="stat center"><div class="stat-val" id="sum-blocks">0</div><div class="stat-lab">Blocks</div></div>
+        <div class="stat center"><div class="stat-val" id="sum-streak">0</div><div class="stat-lab">Day streak</div></div>
+      </div>
+      <div class="field">
+        <label>How did it feel?</label>
+        <div class="pad-grid" id="mood" style="grid-template-columns:repeat(5,1fr)">
+          <button class="pad" data-m="1">😖</button><button class="pad" data-m="2">😕</button>
+          <button class="pad" data-m="3">😐</button><button class="pad" data-m="4">🙂</button>
+          <button class="pad" data-m="5">🔥</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Practice notes — what improved, what fought back?</label>
+        <textarea id="notes" rows="4" placeholder="e.g. F barre finally rang on 5 strings. Chord changes G→C still slow at 70bpm."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="save">Save session</button>
+        <a class="btn" href="index.html">Skip</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, toast, tone, click, esc } = Fretwork;
+initPage("practice.html");
+
+const s0 = Store.load();
+const wk = CURRICULUM.week(s0.currentWeek) || CURRICULUM.week(1);
+const ph = CURRICULUM.phaseOf(wk.n);
+let mode = s0.settings.defaultMode;
+let queue = [], idx = 0, remaining = 0, timer = null, paused = true, elapsedTotal = 0, doneBlocks = [], mood = 4;
+
+document.getElementById("eyebrow").textContent = `${ph.icon} Week ${wk.n} · ${ph.name}`;
+document.getElementById("title").textContent = wk.title;
+["short","normal","long"].forEach(m=>document.getElementById("v-"+m).textContent = CURRICULUM.minutes(wk,m)+" min");
+
+function paintSetup(){
+  document.querySelectorAll(".mode-card").forEach(c=>{
+    c.style.borderColor = c.dataset.mode===mode ? "var(--accent)" : "var(--border-soft)";
+  });
+  const list = CURRICULUM.blocksFor(wk, mode);
+  document.getElementById("preview").innerHTML = list.map((b,i)=>`
+    <div class="block">
+      <div class="block-check" style="background:var(--surface-3);color:var(--text-3);font-family:var(--mono);font-size:11px">${i+1}</div>
+      <div class="block-body">
+        <div class="block-name">${esc(b.name)}</div>
+        ${b.what?`<div class="block-what">${esc(b.what)}</div>`:""}
+      </div>
+      <div class="block-min">${b.min}m</div>
+    </div>`).join("");
+}
+document.querySelectorAll(".mode-card").forEach(c=>c.onclick=()=>{
+  mode = c.dataset.mode; Store.update(x=>x.settings.defaultMode=mode); paintSetup();
+});
+paintSetup();
+
+/* ---------------- runner ---------------- */
+document.getElementById("go").onclick = ()=>{
+  queue = CURRICULUM.blocksFor(wk, mode);
+  /* clear this week's ticks so the session starts fresh */
+  Store.update(x=>x.blockProgress["w"+wk.n]=[]);
+  idx = 0; elapsedTotal = 0; doneBlocks = [];
+  document.getElementById("setup").style.display="none";
+  document.getElementById("runner").style.display="block";
+  loadBlock();
+  setPaused(false);
+};
+document.getElementById("skip-timer").onclick = ()=>{
+  queue = CURRICULUM.blocksFor(wk, mode);
+  elapsedTotal = CURRICULUM.minutes(wk, mode)*60;
+  doneBlocks = queue.map(b=>b.name);
+  showSummary();
+};
+
+function loadBlock(){
+  const b = queue[idx];
+  remaining = b.min*60;
+  document.getElementById("r-eyebrow").textContent = `Block ${idx+1} of ${queue.length} · Week ${wk.n}`;
+  document.getElementById("r-block").textContent = b.name;
+  document.getElementById("r-what").textContent = b.what || "—";
+  const how = document.getElementById("r-how");
+  how.style.display = b.how ? "block" : "none";
+  how.innerHTML = b.how ? "<strong>Technique:</strong> "+esc(b.how) : "";
+  paintClock(); paintQueue();
+}
+function paintQueue(){
+  document.getElementById("queue").innerHTML = queue.map((b,i)=>`
+    <div class="row-between small" style="padding:7px 0;border-bottom:1px solid var(--border-soft);${i===idx?"color:var(--accent);font-weight:650":""}${i<idx?"opacity:.45":""}">
+      <span>${i<idx?"✓ ":i===idx?"▸ ":"　"}${esc(b.name)}</span>
+      <span class="mono tiny">${b.min}m</span>
+    </div>`).join("");
+}
+function paintClock(){
+  const m = Math.floor(remaining/60), sec = remaining%60;
+  document.getElementById("clock").textContent = String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+  const tot = queue[idx].min*60;
+  document.getElementById("tbar").style.width = ((tot-remaining)/tot*100)+"%";
+  document.title = `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")} — ${queue[idx].name}`;
+}
+function setPaused(p){
+  paused = p;
+  document.getElementById("pause").textContent = p ? "Resume" : "Pause";
+  clearInterval(timer);
+  if(!p) timer = setInterval(tick, 1000);
+}
+function tick(){
+  remaining--; elapsedTotal++;
+  if(remaining<=0){
+    if(document.getElementById("chime").checked){ tone(880,.18); setTimeout(()=>tone(1320,.32),190); }
+    doneBlocks.push(queue[idx].name);
+    Progress.toggleBlock(wk.n, queue[idx].name);
+    if(document.getElementById("autoadv").checked) return advance();
+    setPaused(true); remaining=0;
+  }
+  paintClock();
+}
+function advance(){
+  if(idx >= queue.length-1){ clearInterval(timer); return showSummary(); }
+  idx++; loadBlock();
+}
+document.getElementById("pause").onclick = ()=>setPaused(!paused);
+document.getElementById("fwd").onclick = ()=>{
+  if(!doneBlocks.includes(queue[idx].name)){ doneBlocks.push(queue[idx].name); Progress.toggleBlock(wk.n,queue[idx].name); }
+  advance();
+};
+document.getElementById("back").onclick = ()=>{ if(idx>0){ idx--; loadBlock(); } };
+document.getElementById("quit").onclick = ()=>{ clearInterval(timer); showSummary(); };
+document.addEventListener("keydown", e=>{
+  if(document.getElementById("runner").style.display==="none") return;
+  if(e.code==="Space"){ e.preventDefault(); setPaused(!paused); }
+  if(e.code==="ArrowRight") document.getElementById("fwd").click();
+  if(e.code==="ArrowLeft") document.getElementById("back").click();
+});
+
+/* ---------------- inline metronome ---------------- */
+let mOn=false, mTimer=null, mBeat=0;
+const dots = document.getElementById("mdots");
+dots.innerHTML = Array.from({length:4},()=>'<div class="beat-dot"></div>').join("");
+document.getElementById("mslide").oninput = e=>{
+  document.getElementById("mbpm").textContent = e.target.value+" bpm";
+  if(mOn) startM();
+};
+function startM(){
+  clearInterval(mTimer);
+  const bpm = +document.getElementById("mslide").value;
+  mTimer = setInterval(()=>{
+    click(mBeat%4===0);
+    dots.querySelectorAll(".beat-dot").forEach((d,i)=>d.classList.toggle("on", i===mBeat%4));
+    mBeat++;
+  }, 60000/bpm);
+}
+document.getElementById("mstart").onclick = ()=>{
+  mOn=!mOn;
+  document.getElementById("mstart").classList.toggle("btn-primary", mOn);
+  if(mOn){ mBeat=0; startM(); } else { clearInterval(mTimer); dots.querySelectorAll(".beat-dot").forEach(d=>d.classList.remove("on")); }
+};
+
+/* ---------------- summary ---------------- */
+function showSummary(){
+  clearInterval(timer); clearInterval(mTimer); document.title="Session complete — Fretwork";
+  document.getElementById("runner").style.display="none";
+  document.getElementById("setup").style.display="none";
+  document.getElementById("summary").style.display="block";
+  const mins = Math.max(1, Math.round(elapsedTotal/60));
+  document.getElementById("sum-min").textContent = mins;
+  document.getElementById("sum-blocks").textContent = doneBlocks.length;
+  document.getElementById("sum-streak").textContent = Progress.practicedToday() ? Progress.streak() : Progress.streak()+1;
+  document.getElementById("sum-line").textContent = `Week ${wk.n} — ${wk.title}. ${doneBlocks.length} of ${queue.length} blocks done.`;
+  document.querySelector('#mood [data-m="4"]').classList.add("on");
+}
+document.getElementById("mood").onclick = e=>{
+  const b = e.target.closest("[data-m]"); if(!b) return;
+  mood = +b.dataset.m;
+  document.querySelectorAll("#mood .pad").forEach(p=>p.classList.toggle("on", p===b));
+};
+document.getElementById("save").onclick = ()=>{
+  Progress.logSession({
+    minutes: Math.max(1, Math.round(elapsedTotal/60)),
+    week: wk.n, mode, blocks: doneBlocks, mood,
+    notes: document.getElementById("notes").value.trim(),
+  });
+  toast("Session saved 🎸");
+  setTimeout(()=>location.href="index.html", 700);
+};
+</script>
+</body>
+</html>

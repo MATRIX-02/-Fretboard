@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fretwork — Guitar Dashboard</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow" id="today-label"></div>
+    <h1 id="greeting">Welcome back</h1>
+    <p class="sub" id="sub-line"></p>
+  </div>
+
+  <!-- ===================== today's session ===================== -->
+  <div class="card pad-lg" style="border-color:var(--accent-line);background:linear-gradient(150deg,var(--surface),var(--surface-2))">
+    <div class="row-between wrap-flex" style="align-items:flex-start">
+      <div style="flex:1;min-width:260px">
+        <div class="row wrap-flex" style="gap:9px;margin-bottom:10px">
+          <span class="tag tag-accent" id="phase-tag">Phase 1</span>
+          <span class="tag" id="week-tag">Week 1</span>
+          <span class="tag" id="status-tag"></span>
+        </div>
+        <h2 style="font-size:1.5rem;margin-bottom:6px" id="week-title">—</h2>
+        <p class="dim" id="week-focus" style="max-width:56ch"></p>
+
+        <div class="mt-lg">
+          <label style="margin-bottom:8px">How much time do you have today?</label>
+          <div class="btn-row" id="mode-picker">
+            <button class="btn btn-sm" data-mode="short">Short<span class="muted" id="m-short"></span></button>
+            <button class="btn btn-sm" data-mode="normal">Normal<span class="muted" id="m-normal"></span></button>
+            <button class="btn btn-sm" data-mode="long">Long<span class="muted" id="m-long"></span></button>
+          </div>
+        </div>
+
+        <div class="btn-row mt-lg">
+          <a class="btn btn-primary btn-lg" id="start-btn" href="practice.html">▶  Start today's session</a>
+          <a class="btn btn-lg" href="week.html">View week plan</a>
+        </div>
+      </div>
+
+      <div class="center" style="padding:4px 10px">
+        <div class="ring-wrap">
+          <svg width="132" height="132" class="timer-ring">
+            <circle cx="66" cy="66" r="56" fill="none" stroke="var(--surface-3)" stroke-width="10"/>
+            <circle id="ring" cx="66" cy="66" r="56" fill="none" stroke="var(--accent)" stroke-width="10"
+                    stroke-linecap="round" stroke-dasharray="351.8" stroke-dashoffset="351.8"
+                    transform="rotate(-90 66 66)"/>
+          </svg>
+          <div class="ring-label" id="ring-pct">0%</div>
+        </div>
+        <div class="stat-lab mt">Course complete</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== stats ===================== -->
+  <div class="grid g4 mt-lg">
+    <div class="card stat"><div class="stat-val" id="s-streak">0</div><div class="stat-lab">Day streak</div><div class="stat-sub" id="s-streak-sub"></div></div>
+    <div class="card stat"><div class="stat-val" id="s-week">0/48</div><div class="stat-lab">Weeks done</div><div class="stat-sub" id="s-week-sub"></div></div>
+    <div class="card stat"><div class="stat-val" id="s-hours">0h</div><div class="stat-lab">Total practice</div><div class="stat-sub" id="s-hours-sub"></div></div>
+    <div class="card stat"><div class="stat-val" id="s-songs">0</div><div class="stat-lab">Songs learned</div><div class="stat-sub" id="s-songs-sub"></div></div>
+  </div>
+
+  <!-- ===================== last 12 weeks activity ===================== -->
+  <div class="section">
+    <div class="section-head"><h2>Recent activity</h2><a href="tracker.html" class="small">Full tracker →</a></div>
+    <div class="card">
+      <div class="heat" id="heat"></div>
+      <div class="row mt tiny muted" style="justify-content:flex-end;gap:6px">
+        Less
+        <span class="heat-cell"></span><span class="heat-cell" data-l="1"></span>
+        <span class="heat-cell" data-l="2"></span><span class="heat-cell" data-l="3"></span>
+        <span class="heat-cell" data-l="4"></span>
+        More
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== phase progress ===================== -->
+  <div class="section">
+    <div class="section-head"><h2>The path</h2><a href="curriculum.html" class="small">Full curriculum →</a></div>
+    <div class="grid g4" id="phase-cards"></div>
+  </div>
+
+  <!-- ===================== quick access ===================== -->
+  <div class="section">
+    <h2>Quick tools</h2>
+    <div class="grid g4">
+      <a class="card" href="tools.html#metronome"><h3>🥁 Metronome</h3><p class="small dim mt" style="margin-top:6px">Tap tempo, accents, subdivisions.</p></a>
+      <a class="card" href="tools.html#tuner"><h3>🎵 Tuner</h3><p class="small dim" style="margin-top:6px">Reference pitches for 6 tunings.</p></a>
+      <a class="card" href="tools.html#chords"><h3>🎼 Chord library</h3><p class="small dim" style="margin-top:6px">34 diagrams with fingerings.</p></a>
+      <a class="card" href="tools.html#fretboard"><h3>🧭 Fretboard trainer</h3><p class="small dim" style="margin-top:6px">Timed note-naming drills.</p></a>
+    </div>
+  </div>
+
+  <!-- ===================== songs ===================== -->
+  <div class="section">
+    <div class="section-head"><h2 id="songs-head">Songs for you</h2><a href="songs.html" class="small">Full library →</a></div>
+    <div class="grid g3" id="song-picks"></div>
+  </div>
+
+  <!-- ===================== next milestone ===================== -->
+  <div class="section">
+    <h2>Next milestone</h2>
+    <div class="card"><div class="callout" id="milestone">—</div></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/songs.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, todayISO, addDays, daysBetween, esc } = Fretwork;
+initPage("index.html");
+
+const s = Store.load();
+
+/* ---- header ---- */
+document.getElementById("today-label").textContent =
+  new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+const hour = new Date().getHours();
+document.getElementById("greeting").textContent =
+  (hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening") + (s.settings.name ? ", " + esc(s.settings.name) : "");
+
+const dayN = daysBetween(s.startDate, todayISO()) + 1;
+document.getElementById("sub-line").textContent =
+  `Day ${dayN} of your guitar journey. ${Progress.practicedToday() ? "You've already practised today — anything more is bonus." : "You haven't practised yet today."}`;
+
+/* ---- today's week card ---- */
+const wk = CURRICULUM.week(s.currentWeek) || CURRICULUM.week(1);
+const ph = CURRICULUM.phaseOf(wk.n);
+document.getElementById("phase-tag").textContent = ph.icon + " " + ph.name;
+document.getElementById("phase-tag").className = "tag tag-p" + ph.id;
+document.getElementById("week-tag").textContent = `Week ${wk.n} of 48`;
+document.getElementById("week-title").textContent = wk.title;
+document.getElementById("week-focus").textContent = wk.focus;
+const st = document.getElementById("status-tag");
+if (Progress.practicedToday()) { st.textContent = "✓ Practised today"; st.className = "tag tag-done"; }
+else { st.textContent = "Not yet today"; st.className = "tag"; }
+
+["short","normal","long"].forEach(m=>{
+  document.getElementById("m-"+m).textContent = " · " + CURRICULUM.minutes(wk,m) + "m";
+});
+function paintMode(){
+  document.querySelectorAll("#mode-picker .btn").forEach(b=>{
+    b.classList.toggle("btn-primary", b.dataset.mode === Store.load().settings.defaultMode);
+  });
+}
+document.getElementById("mode-picker").onclick = e=>{
+  const b = e.target.closest("[data-mode]"); if(!b) return;
+  Store.update(x=>x.settings.defaultMode = b.dataset.mode);
+  paintMode();
+};
+paintMode();
+
+/* ---- ring ---- */
+const pct = Progress.percentComplete();
+document.getElementById("ring-pct").textContent = pct + "%";
+document.getElementById("ring").style.strokeDashoffset = 351.8 * (1 - pct/100);
+
+/* ---- stats ---- */
+document.getElementById("s-streak").textContent = Progress.streak();
+document.getElementById("s-streak-sub").textContent = "Best: " + Progress.bestStreak() + " days";
+document.getElementById("s-week").textContent = s.weekDone.length + "/48";
+document.getElementById("s-week-sub").textContent = ph.name + " · " + ph.range;
+const mins = Progress.totalMinutes();
+document.getElementById("s-hours").textContent = mins >= 60 ? (mins/60).toFixed(1)+"h" : mins+"m";
+document.getElementById("s-hours-sub").textContent = Progress.minutesLast(7) + " min this week";
+const learned = s.songs.filter(x=>x.status==="learned").length;
+document.getElementById("s-songs").textContent = learned;
+document.getElementById("s-songs-sub").textContent = s.songs.length + " in the list";
+
+/* ---- heatmap: last 12 weeks ---- */
+const heat = document.getElementById("heat");
+const byDate = {};
+s.sessions.forEach(x=>{ byDate[x.date] = (byDate[x.date]||0) + (x.minutes||0); });
+let cur = addDays(todayISO(), -83);
+const dow = new Date(cur+"T12:00:00").getDay();
+for (let i=0;i<dow;i++) heat.appendChild(Object.assign(document.createElement("div"),{className:"heat-cell",style:"visibility:hidden"}));
+for (let i=0;i<84;i++){
+  const m = byDate[cur]||0;
+  const lvl = m===0?0:m<20?1:m<40?2:m<70?3:4;
+  const c = document.createElement("div");
+  c.className="heat-cell"; if(lvl) c.dataset.l=lvl;
+  c.title = cur + (m? ` — ${m} min` : " — no practice");
+  heat.appendChild(c);
+  cur = addDays(cur,1);
+}
+
+/* ---- phases ---- */
+document.getElementById("phase-cards").innerHTML = CURRICULUM.phases.map(p=>{
+  const total = p.weeks[1]-p.weeks[0]+1;
+  const done = s.weekDone.filter(n=>n>=p.weeks[0]&&n<=p.weeks[1]).length;
+  return `<a class="card" href="curriculum.html#phase${p.id}">
+    <div class="row-between"><span class="tag tag-p${p.id}">${p.icon} Phase ${p.id}</span><span class="tiny muted">${done}/${total}</span></div>
+    <h3 style="margin-top:12px">${p.name}</h3>
+    <p class="small dim" style="margin:5px 0 12px">${p.tagline}</p>
+    <div class="bar p${p.id}"><i style="width:${(done/total*100).toFixed(0)}%"></i></div>
+    <div class="tiny muted mt">${p.range}</div>
+  </a>`;
+}).join("");
+
+/* ---- song picks ---- */
+const picks = SONGLIB.forWeek(wk.n).slice(0,3);
+document.getElementById("songs-head").textContent =
+  picks.length && picks[0].week <= wk.n ? "Songs you can play now" : "Songs coming up";
+document.getElementById("song-picks").innerHTML = picks.length ? picks.map(x=>`
+  <a class="card" href="songs.html">
+    <div class="row-between"><span class="tag">${SONGLIB.langs[x.lang]}</span><span class="tiny muted">Week ${x.week}+</span></div>
+    <h3 style="margin-top:11px">${esc(x.t)}</h3>
+    <p class="small dim" style="margin:4px 0 10px">${esc(x.a)} · ${x.y}</p>
+    <div class="row wrap-flex" style="gap:5px">
+      <span class="tag tiny">${esc(x.key)}${x.capo?" · capo "+x.capo:""}</span>
+      ${x.ch.slice(0,5).map(c=>`<span class="tag tiny mono">${esc(c)}</span>`).join("")}
+    </div>
+  </a>`).join("")
+  : `<p class="small muted">Browse the <a href="songs.html">song library</a>.</p>`;
+
+/* ---- milestone ---- */
+document.getElementById("milestone").innerHTML =
+  `<strong>Week ${wk.n} target:</strong> ${esc(wk.milestone)}`;
+</script>
+</body>
+</html>

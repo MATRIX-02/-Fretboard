@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Progress</div>
+    <h1>Tracker</h1>
+    <p class="sub">Everything you've done, measured. Progress on guitar is slow enough day-to-day that it's invisible without records — this is the page that proves it's happening.</p>
+  </div>
+
+  <!-- headline stats -->
+  <div class="grid g4">
+    <div class="card stat"><div class="stat-val" id="t-streak">0</div><div class="stat-lab">Current streak</div><div class="stat-sub" id="t-best"></div></div>
+    <div class="card stat"><div class="stat-val" id="t-sessions">0</div><div class="stat-lab">Sessions</div><div class="stat-sub" id="t-avg"></div></div>
+    <div class="card stat"><div class="stat-val" id="t-hours">0h</div><div class="stat-lab">Total time</div><div class="stat-sub" id="t-week"></div></div>
+    <div class="card stat"><div class="stat-val" id="t-weeks">0</div><div class="stat-lab">Weeks complete</div><div class="stat-sub" id="t-pace"></div></div>
+  </div>
+
+  <!-- minutes chart -->
+  <div class="section">
+    <div class="section-head"><h2>Practice minutes</h2>
+      <div class="btn-row">
+        <button class="btn btn-sm btn-primary" data-span="14">14 days</button>
+        <button class="btn btn-sm" data-span="30">30 days</button>
+        <button class="btn btn-sm" data-span="90">90 days</button>
+      </div>
+    </div>
+    <div class="card"><div id="chart"></div></div>
+  </div>
+
+  <!-- metrics -->
+  <div class="section">
+    <h2>Measured skills</h2>
+    <div class="grid g3">
+      <div class="card">
+        <div class="stat-lab mb">Chord changes / min</div>
+        <div id="m-changes"></div>
+      </div>
+      <div class="card">
+        <div class="stat-lab mb">Fretboard accuracy</div>
+        <div id="m-fret"></div>
+      </div>
+      <div class="card">
+        <div class="stat-lab mb">Ear training accuracy</div>
+        <div id="m-ear"></div>
+      </div>
+    </div>
+    <p class="tiny muted mt">Run the drills on the <a href="tools.html">Tools</a> page and hit "save to tracker" to populate these.</p>
+  </div>
+
+  <!-- songs -->
+  <div class="section">
+    <div class="section-head"><h2>Repertoire</h2>
+      <button class="btn btn-sm btn-primary" id="add-song">+ Add song</button>
+    </div>
+    <div class="card">
+      <div id="song-form" style="display:none" class="mb">
+        <div class="grid g4">
+          <div class="field"><label>Title</label><input type="text" id="s-title"></div>
+          <div class="field"><label>Artist</label><input type="text" id="s-artist"></div>
+          <div class="field"><label>Key / capo</label><input type="text" id="s-key" placeholder="G, capo 2"></div>
+          <div class="field"><label>Status</label>
+            <select id="s-status">
+              <option value="want">Want to learn</option>
+              <option value="learning">Learning</option>
+              <option value="learned">Learned</option>
+              <option value="performance">Performance ready</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary btn-sm" id="s-save">Save</button><button class="btn btn-sm" id="s-cancel">Cancel</button></div>
+        <div class="divider"></div>
+      </div>
+      <div id="songs"></div>
+    </div>
+  </div>
+
+  <!-- goals -->
+  <div class="section">
+    <div class="section-head"><h2>Goals</h2></div>
+    <div class="card">
+      <div class="row mb">
+        <input type="text" id="g-text" placeholder="e.g. Play Blackbird for my sister by Christmas">
+        <button class="btn btn-primary" id="g-add">Add</button>
+      </div>
+      <div id="goals"></div>
+    </div>
+  </div>
+
+  <!-- log -->
+  <div class="section">
+    <div class="section-head"><h2>Practice log</h2><span class="tiny muted" id="log-count"></span></div>
+    <div class="card"><div id="log"></div></div>
+  </div>
+
+  <!-- data -->
+  <div class="section">
+    <h2>Your data</h2>
+    <div class="card">
+      <p class="small dim mb">Everything is stored in this browser only — nothing leaves your computer. Export regularly if you care about the history, and re-import to move it to another browser or machine.</p>
+      <div class="btn-row">
+        <button class="btn" id="export">⬇ Export backup (.json)</button>
+        <button class="btn" id="import-btn">⬆ Import backup</button>
+        <input type="file" id="import" accept=".json" style="display:none">
+        <button class="btn" id="print">🖨 Print progress report</button>
+        <button class="btn" id="reset" style="margin-left:auto;color:var(--bad)">Reset everything</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, initPage, toast, todayISO, addDays, daysBetween, prettyDate, uid, esc } = Fretwork;
+initPage("tracker.html");
+const $ = id=>document.getElementById(id);
+let span = 14;
+
+function stats(){
+  const s = Store.load();
+  $("t-streak").textContent = Progress.streak();
+  $("t-best").textContent = "Best: "+Progress.bestStreak()+" days";
+  $("t-sessions").textContent = s.sessions.length;
+  const avg = s.sessions.length ? Math.round(Progress.totalMinutes()/s.sessions.length) : 0;
+  $("t-avg").textContent = avg+" min average";
+  const mins = Progress.totalMinutes();
+  $("t-hours").textContent = mins>=60 ? (mins/60).toFixed(1)+"h" : mins+"m";
+  $("t-week").textContent = Progress.minutesLast(7)+" min last 7 days";
+  $("t-weeks").textContent = s.weekDone.length+"/48";
+  const elapsedWeeks = Math.max(1, Math.ceil((daysBetween(s.startDate, todayISO())+1)/7));
+  const pace = (s.weekDone.length/elapsedWeeks).toFixed(2);
+  $("t-pace").textContent = pace+" weeks/week pace";
+}
+
+function chart(){
+  const s = Store.load(), by = {};
+  s.sessions.forEach(x=>by[x.date]=(by[x.date]||0)+(x.minutes||0));
+  const days = [];
+  for(let i=span-1;i>=0;i--){ const d = addDays(todayISO(),-i); days.push([d, by[d]||0]); }
+  const max = Math.max(30, ...days.map(d=>d[1]));
+  const W = 900, H = 190, bw = W/days.length;
+  $("chart").innerHTML = `
+    <svg viewBox="0 0 ${W} ${H+26}" style="width:100%;height:auto">
+      ${[0,.5,1].map(f=>`<line x1="0" y1="${H-H*f}" x2="${W}" y2="${H-H*f}" stroke="var(--border-soft)" stroke-width="1"/>
+        <text x="2" y="${H-H*f-4}" font-size="9" fill="var(--text-3)">${Math.round(max*f)}m</text>`).join("")}
+      ${days.map(([d,m],i)=>{
+        const h = m/max*H;
+        return `<rect x="${i*bw+bw*0.16}" y="${H-h}" width="${bw*0.68}" height="${Math.max(h,1)}" rx="3"
+                 fill="${m?"var(--accent)":"var(--surface-3)"}"><title>${d}: ${m} min</title></rect>`;
+      }).join("")}
+      ${days.map(([d],i)=> (span<=14 || i%Math.ceil(span/10)===0) ?
+        `<text x="${i*bw+bw/2}" y="${H+16}" font-size="8.5" fill="var(--text-3)" text-anchor="middle">${d.slice(5)}</text>`:"").join("")}
+    </svg>`;
+}
+document.querySelector("[data-span]").parentElement.onclick = e=>{
+  const b=e.target.closest("[data-span]"); if(!b) return;
+  span=+b.dataset.span;
+  b.parentElement.querySelectorAll(".btn").forEach(x=>x.classList.toggle("btn-primary",x===b));
+  chart();
+};
+
+function metrics(){
+  const s = Store.load();
+  const render = (type, fmt) => {
+    const rows = s.metrics.filter(m=>m.type===type).slice(-8).reverse();
+    if(!rows.length) return '<p class="small muted">No results yet.</p>';
+    const best = Math.max(...s.metrics.filter(m=>m.type===type).map(m=>m.value));
+    return `<div class="stat-val" style="font-size:1.5rem">${fmt(rows[0].value)}</div>
+      <div class="stat-sub">latest · best ${fmt(best)}</div>
+      <div class="mt">${rows.map(m=>`<div class="row-between tiny" style="padding:5px 0;border-bottom:1px solid var(--border-soft)">
+        <span class="muted">${m.date.slice(5)} ${esc(m.detail||"")}</span><span class="mono">${fmt(m.value)}</span></div>`).join("")}</div>`;
+  };
+  $("m-changes").innerHTML = render("changes", v=>v+"");
+  $("m-fret").innerHTML   = render("fretboard", v=>v+"%");
+  $("m-ear").innerHTML    = render("ear", v=>v+"%");
+}
+
+/* -------- songs -------- */
+const S_LABEL = {want:"Want to learn", learning:"Learning", learned:"Learned", performance:"Performance ready"};
+function songs(){
+  const s = Store.load();
+  if(!s.songs.length){ $("songs").innerHTML='<div class="empty"><div class="empty-icon">🎵</div>No songs yet. Add the ones you want to play — a concrete target beats abstract practice.</div>'; return; }
+  const order = ["performance","learned","learning","want"];
+  $("songs").innerHTML = `<table><thead><tr><th>Song</th><th>Artist</th><th>Key</th><th>Status</th><th></th></tr></thead><tbody>` +
+    [...s.songs].sort((a,b)=>order.indexOf(a.status)-order.indexOf(b.status)).map(x=>`
+    <tr>
+      <td><strong>${esc(x.title)}</strong></td>
+      <td class="dim">${esc(x.artist||"—")}</td>
+      <td class="mono tiny">${esc(x.key||"—")}</td>
+      <td><select data-id="${x.id}" class="s-stat" style="width:auto;padding:4px 8px;font-size:.8rem">
+        ${Object.entries(S_LABEL).map(([v,l])=>`<option value="${v}" ${x.status===v?"selected":""}>${l}</option>`).join("")}
+      </select></td>
+      <td style="text-align:right"><button class="btn btn-sm" data-del="${x.id}">✕</button></td>
+    </tr>`).join("") + `</tbody></table>`;
+}
+$("add-song").onclick = ()=>$("song-form").style.display = $("song-form").style.display==="none"?"block":"none";
+$("s-cancel").onclick = ()=>$("song-form").style.display="none";
+$("s-save").onclick = ()=>{
+  const t = $("s-title").value.trim(); if(!t) return toast("Title required");
+  Store.update(s=>s.songs.push({id:uid(),title:t,artist:$("s-artist").value.trim(),
+    key:$("s-key").value.trim(),status:$("s-status").value,added:todayISO()}));
+  ["s-title","s-artist","s-key"].forEach(i=>$(i).value="");
+  $("song-form").style.display="none"; songs(); stats(); toast("Song added");
+};
+$("songs").onclick = e=>{
+  const d = e.target.closest("[data-del]"); if(!d) return;
+  Store.update(s=>s.songs=s.songs.filter(x=>x.id!==d.dataset.del)); songs(); stats();
+};
+$("songs").onchange = e=>{
+  const sel = e.target.closest(".s-stat"); if(!sel) return;
+  Store.update(s=>{ const x=s.songs.find(y=>y.id===sel.dataset.id); if(x) x.status=sel.value; });
+  songs(); stats(); toast("Updated");
+};
+
+/* -------- goals -------- */
+function goals(){
+  const s = Store.load();
+  $("goals").innerHTML = s.goals.length ? s.goals.map(g=>`
+    <div class="check-row" style="border-bottom:1px solid var(--border-soft)">
+      <input type="checkbox" data-g="${g.id}" ${g.done?"checked":""}>
+      <label style="flex:1;${g.done?"text-decoration:line-through;opacity:.55":""}">${esc(g.text)}</label>
+      <button class="btn btn-sm" data-gdel="${g.id}">✕</button>
+    </div>`).join("")
+    : '<p class="small muted">No goals set. Specific and dated beats vague — "play Wonderwall at the office party in December" works better than "get good".</p>';
+}
+$("g-add").onclick = ()=>{
+  const t = $("g-text").value.trim(); if(!t) return;
+  Store.update(s=>s.goals.push({id:uid(),text:t,done:false}));
+  $("g-text").value=""; goals();
+};
+$("g-text").onkeydown = e=>{ if(e.key==="Enter") $("g-add").click(); };
+$("goals").onclick = e=>{
+  const c = e.target.closest("[data-g]"), d = e.target.closest("[data-gdel]");
+  if(c) Store.update(s=>{ const g=s.goals.find(x=>x.id===c.dataset.g); if(g) g.done=c.checked; });
+  if(d) Store.update(s=>s.goals=s.goals.filter(x=>x.id!==d.dataset.gdel));
+  if(c||d) goals();
+};
+
+/* -------- log -------- */
+function log(){
+  const s = Store.load();
+  const rows = [...s.sessions].reverse().slice(0,40);
+  $("log-count").textContent = s.sessions.length+" sessions logged";
+  if(!rows.length){ $("log").innerHTML='<div class="empty"><div class="empty-icon">📓</div>No sessions yet. Run one from the Practice page.</div>'; return; }
+  const MOOD=["","😖","😕","😐","🙂","🔥"];
+  $("log").innerHTML = rows.map(x=>`
+    <div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">
+      <div class="row-between">
+        <div class="row" style="gap:10px">
+          <span class="tag">W${x.week}</span>
+          <strong class="small">${prettyDate(x.date)}</strong>
+          <span class="tiny muted">${x.minutes} min · ${x.mode} · ${x.blocks.length} blocks</span>
+        </div>
+        <span>${MOOD[x.mood]||""}</span>
+      </div>
+      ${x.notes?`<p class="small dim" style="margin-top:6px">${esc(x.notes)}</p>`:""}
+    </div>`).join("");
+}
+
+/* -------- data -------- */
+$("export").onclick = ()=>{
+  const blob = new Blob([Store.export()],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `fretwork-backup-${todayISO()}.json`;
+  a.click(); toast("Backup downloaded");
+};
+$("import-btn").onclick = ()=>$("import").click();
+$("import").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{ Store.import(r.result); toast("Imported"); setTimeout(()=>location.reload(),600); }
+    catch(err){ toast("That file isn't a valid backup"); } };
+  r.readAsText(f);
+};
+$("print").onclick = ()=>window.print();
+$("reset").onclick = ()=>{
+  if(confirm("Delete all progress, sessions, songs and goals? Export a backup first if you might want it back.")){
+    Store.reset(); location.reload();
+  }
+};
+
+stats(); chart(); metrics(); songs(); goals(); log();
+</script>
+</body>
+</html>

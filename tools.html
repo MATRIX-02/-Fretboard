@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Practice tools</div>
+    <h1>Everything you need in one tab</h1>
+    <p class="sub">All of these run offline in your browser. Sound uses the Web Audio API — click anything once to enable audio.</p>
+  </div>
+
+  <div class="btn-row mb">
+    <a class="btn btn-sm" href="#metronome">Metronome</a>
+    <a class="btn btn-sm" href="#tuner">Tuner</a>
+    <a class="btn btn-sm" href="#chords">Chord library</a>
+    <a class="btn btn-sm" href="#fretboard">Fretboard trainer</a>
+    <a class="btn btn-sm" href="#ear">Ear trainer</a>
+    <a class="btn btn-sm" href="#changes">Chord change test</a>
+    <a class="btn btn-sm" href="#scales">Scale finder</a>
+  </div>
+
+  <!-- ================= METRONOME ================= -->
+  <div class="section" id="metronome">
+    <h2>🥁 Metronome</h2>
+    <div class="card pad-lg">
+      <div class="grid g-side">
+        <div class="center">
+          <div class="big-num" id="bpm">70</div>
+          <div class="stat-lab">BPM</div>
+          <input type="range" id="bpm-slide" min="30" max="240" value="70" class="mt-lg">
+          <div class="btn-row mt" style="justify-content:center">
+            <button class="btn btn-sm" data-d="-5">−5</button>
+            <button class="btn btn-sm" data-d="-1">−1</button>
+            <button class="btn btn-sm" data-d="1">+1</button>
+            <button class="btn btn-sm" data-d="5">+5</button>
+            <button class="btn btn-sm" id="tap">Tap tempo</button>
+          </div>
+          <div class="beat-dots mt-lg" id="dots"></div>
+          <button class="btn btn-primary btn-lg mt-lg" id="m-toggle" style="min-width:180px">▶  Start</button>
+        </div>
+        <div>
+          <div class="field">
+            <label>Time signature</label>
+            <select id="sig">
+              <option value="4">4/4 — most pop, rock, folk</option>
+              <option value="3">3/4 — waltz</option>
+              <option value="2">2/4 — march</option>
+              <option value="6">6/8 — feel in 2 (count 6)</option>
+              <option value="5">5/4 — odd time</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Subdivision</label>
+            <select id="sub">
+              <option value="1">Quarter notes</option>
+              <option value="2">Eighth notes</option>
+              <option value="3">Triplets</option>
+              <option value="4">Sixteenth notes</option>
+            </select>
+          </div>
+          <div class="check-row"><input type="checkbox" id="accent" checked><label for="accent">Accent beat 1</label></div>
+          <div class="check-row"><input type="checkbox" id="two-four"><label for="two-four">Click only on 2 &amp; 4 (groove training)</label></div>
+          <div class="divider"></div>
+          <div class="field">
+            <label>Speed trainer — raise tempo automatically</label>
+            <div class="row">
+              <input type="number" id="st-bars" value="8" min="1" max="64" style="width:80px">
+              <span class="small dim">bars, then</span>
+              <input type="number" id="st-inc" value="5" min="1" max="20" style="width:80px">
+              <span class="small dim">bpm faster</span>
+            </div>
+          </div>
+          <div class="check-row"><input type="checkbox" id="st-on"><label for="st-on">Enable speed trainer</label></div>
+          <p class="tiny muted mt">Bars played: <span id="barcount" class="mono">0</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TUNER ================= -->
+  <div class="section" id="tuner">
+    <h2>🎵 Reference tuner</h2>
+    <div class="card pad-lg">
+      <p class="small dim mb">Play a reference pitch and match your string to it by ear. Tuning by ear is a skill worth building — it trains pitch discrimination that a needle tuner never will.</p>
+      <div class="field" style="max-width:320px">
+        <label>Tuning</label>
+        <select id="tuning">
+          <option value="standard">Standard — E A D G B e</option>
+          <option value="halfdown">Half step down — Eb Ab Db Gb Bb eb</option>
+          <option value="dropd">Drop D — D A D G B e</option>
+          <option value="dadgad">DADGAD</option>
+          <option value="openg">Open G — D G D G B d</option>
+          <option value="opend">Open D — D A D F# A d</option>
+        </select>
+      </div>
+      <div class="pad-grid" id="strings" style="grid-template-columns:repeat(6,1fr)"></div>
+      <div class="btn-row mt-lg">
+        <button class="btn" id="play-all">Play all strings in sequence</button>
+        <button class="btn" id="a440">A440 reference</button>
+      </div>
+      <div class="callout mt-lg"><strong>Tuning tip:</strong> tune up to the note, never down to it. If you're above the pitch, drop below first and come back up — that takes the slack out of the machine head and the string holds.</div>
+    </div>
+  </div>
+
+  <!-- ================= CHORDS ================= -->
+  <div class="section" id="chords">
+    <h2>🎼 Chord library</h2>
+    <div class="card pad-lg">
+      <div class="field" style="max-width:320px">
+        <label>Search</label>
+        <input type="text" id="chord-search" placeholder="Try: Am, F, sus, 7">
+      </div>
+      <div id="chord-groups"></div>
+    </div>
+  </div>
+
+  <!-- ================= FRETBOARD ================= -->
+  <div class="section" id="fretboard">
+    <h2>🧭 Fretboard trainer</h2>
+    <div class="card pad-lg">
+      <div class="grid g-side">
+        <div class="center">
+          <div class="stat-lab">Name this note</div>
+          <div class="big-num" id="fb-prompt" style="font-size:2.1rem;margin:14px 0">Press start</div>
+          <p class="dim small" id="fb-detail"></p>
+          <div class="pad-grid mt-lg" id="fb-pads" style="grid-template-columns:repeat(6,1fr)"></div>
+          <button class="btn btn-primary mt-lg" id="fb-start">Start drill</button>
+        </div>
+        <div>
+          <div class="field">
+            <label>Strings included</label>
+            <div id="fb-strings"></div>
+          </div>
+          <div class="field">
+            <label>Fret range: <span id="fb-range" class="mono">0–12</span></label>
+            <input type="range" id="fb-max" min="5" max="15" value="12">
+          </div>
+          <div class="divider"></div>
+          <div class="grid g3">
+            <div class="stat center"><div class="stat-val" id="fb-score">0</div><div class="stat-lab">Correct</div></div>
+            <div class="stat center"><div class="stat-val" id="fb-total">0</div><div class="stat-lab">Asked</div></div>
+            <div class="stat center"><div class="stat-val" id="fb-time">—</div><div class="stat-lab">Avg sec</div></div>
+          </div>
+          <button class="btn btn-sm mt-lg" id="fb-save">Save result to tracker</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= EAR TRAINER ================= -->
+  <div class="section" id="ear">
+    <h2>👂 Interval ear trainer</h2>
+    <div class="card pad-lg">
+      <div class="grid g-side">
+        <div class="center">
+          <div class="stat-lab">Which interval?</div>
+          <div class="btn-row mt-lg" style="justify-content:center">
+            <button class="btn btn-primary btn-lg" id="ear-play">🔊 Play interval</button>
+            <button class="btn btn-lg" id="ear-replay">Replay</button>
+          </div>
+          <div class="pad-grid mt-lg" id="ear-pads" style="grid-template-columns:repeat(4,1fr)"></div>
+          <p class="dim mt" id="ear-feedback" style="min-height:24px"></p>
+        </div>
+        <div>
+          <div class="field">
+            <label>Direction</label>
+            <select id="ear-dir">
+              <option value="up">Ascending</option>
+              <option value="down">Descending</option>
+              <option value="harmonic">Harmonic (both at once)</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Difficulty</label>
+            <select id="ear-level">
+              <option value="easy">Easy — 5th, octave, major 3rd</option>
+              <option value="med" selected>Medium — all common intervals</option>
+              <option value="hard">Hard — all 12 including tritone</option>
+            </select>
+          </div>
+          <div class="divider"></div>
+          <div class="grid g2">
+            <div class="stat center"><div class="stat-val" id="ear-score">0</div><div class="stat-lab">Correct</div></div>
+            <div class="stat center"><div class="stat-val" id="ear-acc">—</div><div class="stat-lab">Accuracy</div></div>
+          </div>
+          <button class="btn btn-sm mt-lg" id="ear-save">Save result to tracker</button>
+          <div class="callout mt-lg tiny">Reference songs — m2 Jaws · M2 Happy Birthday · m3 Smoke on the Water · M3 When the Saints · P4 Bridal March · Tritone The Simpsons · P5 Star Wars · M6 NBC chime · m7 Star Trek · M7 Take On Me · Octave Somewhere Over the Rainbow</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CHANGE TEST ================= -->
+  <div class="section" id="changes">
+    <h2>⏱ One-minute chord change test</h2>
+    <div class="card pad-lg">
+      <p class="small dim mb">The highest-value beginner drill there is. Pick two chords, swap between them for 60 seconds, count every clean change. Log it weekly and watch the number climb.</p>
+      <div class="grid g3">
+        <div class="field"><label>Chord A</label><select id="cc-a"></select></div>
+        <div class="field"><label>Chord B</label><select id="cc-b"></select></div>
+        <div class="field"><label>&nbsp;</label><button class="btn btn-primary" style="width:100%" id="cc-start">Start 60s</button></div>
+      </div>
+      <div class="center mt-lg">
+        <div class="big-num" id="cc-clock">60</div>
+        <button class="btn btn-lg mt" id="cc-count" style="min-width:220px" disabled>Tap for each change</button>
+        <div class="stat-val mt-lg" id="cc-num">0</div>
+        <div class="stat-lab">Changes</div>
+        <p class="dim small mt" id="cc-best"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCALE FINDER ================= -->
+  <div class="section" id="scales">
+    <h2>🔍 Scale &amp; key finder</h2>
+    <div class="card pad-lg">
+      <div class="grid g3">
+        <div class="field"><label>Root</label><select id="sc-root"></select></div>
+        <div class="field"><label>Scale</label><select id="sc-type"></select></div>
+        <div class="field"><label>&nbsp;</label><button class="btn" style="width:100%" id="sc-play">🔊 Hear it</button></div>
+      </div>
+      <div class="mt-lg" id="sc-out"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, initPage, toast, chordSVG, CHORDS, CHORD_GROUPS, tone, click, audio,
+        NOTES, STRING_LABEL, noteAt, todayISO, esc } = Fretwork;
+initPage("tools.html");
+
+/* ==================== METRONOME ==================== */
+let mRun=false, mTimer=null, mStep=0, mBars=0;
+const $ = id=>document.getElementById(id);
+function beats(){ return +$("sig").value; }
+function drawDots(){
+  $("dots").innerHTML = Array.from({length:beats()},()=>'<div class="beat-dot"></div>').join("");
+}
+drawDots();
+$("sig").onchange = ()=>{ drawDots(); if(mRun) restartM(); };
+$("sub").onchange = ()=>{ if(mRun) restartM(); };
+$("bpm-slide").oninput = e=>{ $("bpm").textContent = e.target.value; if(mRun) restartM(); };
+document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{
+  const v = Math.max(30, Math.min(240, +$("bpm-slide").value + +b.dataset.d));
+  $("bpm-slide").value=v; $("bpm").textContent=v; if(mRun) restartM();
+});
+let taps=[];
+$("tap").onclick = ()=>{
+  const now = Date.now();
+  taps = taps.filter(t=>now-t < 2500); taps.push(now);
+  if(taps.length>1){
+    const avg = (taps[taps.length-1]-taps[0])/(taps.length-1);
+    const v = Math.round(Math.max(30,Math.min(240, 60000/avg)));
+    $("bpm-slide").value=v; $("bpm").textContent=v; if(mRun) restartM();
+  }
+};
+function restartM(){ clearInterval(mTimer); startM(); }
+function startM(){
+  const bpm = +$("bpm-slide").value, sub = +$("sub").value, B = beats();
+  mTimer = setInterval(()=>{
+    const beat = Math.floor(mStep/sub) % B;
+    const isBeat = mStep % sub === 0;
+    const only24 = $("two-four").checked;
+    if(isBeat){
+      const play = only24 ? (beat===1||beat===3) : true;
+      if(play) click($("accent").checked && beat===0 && !only24);
+      $("dots").querySelectorAll(".beat-dot").forEach((d,i)=>d.classList.toggle("on", i===beat));
+      if(beat===0 && mStep>0){
+        mBars++; $("barcount").textContent = mBars;
+        if($("st-on").checked && mBars % +$("st-bars").value === 0){
+          const v = Math.min(240, +$("bpm-slide").value + +$("st-inc").value);
+          $("bpm-slide").value=v; $("bpm").textContent=v;
+          toast("Tempo → "+v+" bpm");
+          mStep++; restartM(); return;
+        }
+      }
+    } else if(!only24) { click(false); }
+    mStep++;
+  }, 60000/bpm/sub);
+}
+$("m-toggle").onclick = ()=>{
+  mRun=!mRun;
+  $("m-toggle").textContent = mRun ? "■  Stop" : "▶  Start";
+  $("m-toggle").classList.toggle("btn-primary", !mRun);
+  if(mRun){ mStep=0; mBars=0; $("barcount").textContent=0; audio(); startM(); }
+  else { clearInterval(mTimer); $("dots").querySelectorAll(".beat-dot").forEach(d=>d.classList.remove("on")); }
+};
+
+/* ==================== TUNER ==================== */
+const TUNINGS = {
+  standard:[["E",2],["A",2],["D",3],["G",3],["B",3],["E",4]],
+  halfdown:[["D#",2],["G#",2],["C#",3],["F#",3],["A#",3],["D#",4]],
+  dropd:   [["D",2],["A",2],["D",3],["G",3],["B",3],["E",4]],
+  dadgad:  [["D",2],["A",2],["D",3],["G",3],["A",3],["D",4]],
+  openg:   [["D",2],["G",2],["D",3],["G",3],["B",3],["D",4]],
+  opend:   [["D",2],["A",2],["D",3],["F#",3],["A",3],["D",4]],
+};
+function drawStrings(){
+  const t = TUNINGS[$("tuning").value];
+  $("strings").innerHTML = t.map((x,i)=>
+    `<button class="pad" data-i="${i}">${x[0]}<br><span class="tiny muted">${6-i}</span></button>`).join("");
+}
+drawStrings();
+$("tuning").onchange = drawStrings;
+$("strings").onclick = e=>{
+  const b = e.target.closest("[data-i]"); if(!b) return;
+  const [n,o] = TUNINGS[$("tuning").value][+b.dataset.i];
+  tone(Fretwork.noteFreq(n,o), 2.2, "triangle", 0.2);
+  b.classList.add("on"); setTimeout(()=>b.classList.remove("on"), 2200);
+};
+$("play-all").onclick = ()=>{
+  TUNINGS[$("tuning").value].forEach(([n,o],i)=>
+    setTimeout(()=>{ tone(Fretwork.noteFreq(n,o),1.6,"triangle",0.2);
+      const p=$("strings").children[i]; p.classList.add("on"); setTimeout(()=>p.classList.remove("on"),1500); }, i*1700));
+};
+$("a440").onclick = ()=>tone(440, 2.5, "sine", 0.2);
+
+/* ==================== CHORDS ==================== */
+function drawChords(q=""){
+  const query = q.toLowerCase();
+  $("chord-groups").innerHTML = CHORD_GROUPS.map(g=>{
+    const list = g.list.filter(c=>!query || c.toLowerCase().includes(query) || g.name.toLowerCase().includes(query));
+    if(!list.length) return "";
+    return `<div class="mt-lg"><div class="stat-lab mb">${g.name}</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))">
+        ${list.map(c=>`<div class="chord-tile">${chordSVG(c)}</div>`).join("")}
+      </div></div>`;
+  }).join("") || '<p class="empty">No chords match that search.</p>';
+}
+drawChords();
+$("chord-search").oninput = e=>drawChords(e.target.value);
+
+/* ==================== FRETBOARD TRAINER ==================== */
+let fbOn=false, fbCur=null, fbStart=0, fbScore=0, fbTotal=0, fbTimes=[];
+$("fb-strings").innerHTML = STRING_LABEL.map((l,i)=>
+  `<div class="check-row"><input type="checkbox" class="fb-s" value="${i}" ${i<2?"checked":""}><label>String ${l}</label></div>`).join("");
+$("fb-pads").innerHTML = NOTES.map(n=>`<button class="pad" data-n="${n}">${n}</button>`).join("");
+$("fb-max").oninput = e=>$("fb-range").textContent = "0–"+e.target.value;
+$("fb-start").onclick = ()=>{
+  const sel=[...document.querySelectorAll(".fb-s:checked")];
+  if(!sel.length) return toast("Select at least one string");
+  fbOn=true; fbScore=0; fbTotal=0; fbTimes=[]; nextFB();
+  $("fb-start").textContent="Restart drill";
+};
+function nextFB(){
+  const sel=[...document.querySelectorAll(".fb-s:checked")].map(x=>+x.value);
+  const s = sel[Math.floor(Math.random()*sel.length)];
+  const f = Math.floor(Math.random()*(+$("fb-max").value+1));
+  fbCur = {s,f,note:noteAt(s,f)};
+  fbStart = Date.now();
+  $("fb-prompt").textContent = `String ${6-s}, fret ${f}`;
+  $("fb-detail").textContent = STRING_LABEL[s] + " string";
+  document.querySelectorAll("#fb-pads .pad").forEach(p=>p.className="pad");
+}
+$("fb-pads").onclick = e=>{
+  const b=e.target.closest("[data-n]"); if(!b||!fbOn) return;
+  fbTotal++;
+  const ok = b.dataset.n === fbCur.note;
+  if(ok){ fbScore++; fbTimes.push((Date.now()-fbStart)/1000); b.classList.add("right"); tone(660,.12); }
+  else { b.classList.add("wrong"); document.querySelector(`#fb-pads [data-n="${fbCur.note}"]`).classList.add("right"); tone(180,.2,"sawtooth",.12); }
+  $("fb-score").textContent=fbScore; $("fb-total").textContent=fbTotal;
+  $("fb-time").textContent = fbTimes.length ? (fbTimes.reduce((a,b)=>a+b,0)/fbTimes.length).toFixed(1) : "—";
+  setTimeout(nextFB, ok?450:1100);
+};
+$("fb-save").onclick = ()=>{
+  if(!fbTotal) return toast("Do a drill first");
+  Store.update(s=>s.metrics.push({date:todayISO(),type:"fretboard",value:Math.round(fbScore/fbTotal*100),
+    detail:`${fbScore}/${fbTotal}, avg ${(fbTimes.reduce((a,b)=>a+b,0)/(fbTimes.length||1)).toFixed(1)}s`}));
+  toast("Saved to tracker");
+};
+
+/* ==================== EAR TRAINER ==================== */
+const IVL = [["m2",1],["M2",2],["m3",3],["M3",4],["P4",5],["TT",6],["P5",7],["m6",8],["M6",9],["m7",10],["M7",11],["Oct",12]];
+const LEVELS = { easy:["M3","P5","Oct"], med:["M2","M3","P4","P5","M6","m3","m7","Oct"], hard:IVL.map(x=>x[0]) };
+let earCur=null, earScore=0, earTotal=0, earRoot=261.63;
+function drawEarPads(){
+  const allowed = LEVELS[$("ear-level").value];
+  $("ear-pads").innerHTML = IVL.filter(x=>allowed.includes(x[0]))
+    .map(x=>`<button class="pad" data-i="${x[0]}">${x[0]}</button>`).join("");
+}
+drawEarPads();
+$("ear-level").onchange = drawEarPads;
+function playEar(){
+  const dir = $("ear-dir").value === "mixed"
+    ? ["up","down","harmonic"][Math.floor(Math.random()*3)] : $("ear-dir").value;
+  const semis = IVL.find(x=>x[0]===earCur)[1];
+  const f2 = earRoot * Math.pow(2, semis/12);
+  if(dir==="harmonic"){ tone(earRoot,1.4,"triangle",.16); tone(f2,1.4,"triangle",.16); }
+  else if(dir==="down"){ tone(f2,.75,"triangle",.2); setTimeout(()=>tone(earRoot,.9,"triangle",.2),800); }
+  else { tone(earRoot,.75,"triangle",.2); setTimeout(()=>tone(f2,.9,"triangle",.2),800); }
+}
+$("ear-play").onclick = ()=>{
+  const allowed = LEVELS[$("ear-level").value];
+  earCur = allowed[Math.floor(Math.random()*allowed.length)];
+  earRoot = 196 * Math.pow(2, Math.floor(Math.random()*8)/12);
+  $("ear-feedback").textContent = "";
+  document.querySelectorAll("#ear-pads .pad").forEach(p=>p.className="pad");
+  playEar();
+};
+$("ear-replay").onclick = ()=>{ if(earCur) playEar(); };
+$("ear-pads").onclick = e=>{
+  const b=e.target.closest("[data-i]"); if(!b||!earCur) return;
+  earTotal++;
+  if(b.dataset.i===earCur){ earScore++; b.classList.add("right"); $("ear-feedback").textContent="✓ Correct — "+earCur; }
+  else { b.classList.add("wrong"); document.querySelector(`#ear-pads [data-i="${earCur}"]`)?.classList.add("right");
+    $("ear-feedback").textContent="✗ That was "+earCur; }
+  $("ear-score").textContent=earScore;
+  $("ear-acc").textContent=Math.round(earScore/earTotal*100)+"%";
+  earCur=null;
+};
+$("ear-save").onclick = ()=>{
+  if(!earTotal) return toast("Do a drill first");
+  Store.update(s=>s.metrics.push({date:todayISO(),type:"ear",value:Math.round(earScore/earTotal*100),
+    detail:`${earScore}/${earTotal} at ${$("ear-level").value}`}));
+  toast("Saved to tracker");
+};
+
+/* ==================== CHORD CHANGE TEST ==================== */
+const chordNames = Object.keys(CHORDS);
+$("cc-a").innerHTML = chordNames.map(c=>`<option ${c==="G"?"selected":""}>${c}</option>`).join("");
+$("cc-b").innerHTML = chordNames.map(c=>`<option ${c==="C"?"selected":""}>${c}</option>`).join("");
+let ccT=null, ccLeft=60, ccN=0;
+$("cc-start").onclick = ()=>{
+  clearInterval(ccT); ccLeft=60; ccN=0;
+  $("cc-num").textContent=0; $("cc-clock").textContent=60;
+  $("cc-count").disabled=false; $("cc-count").classList.add("btn-primary");
+  tone(880,.15);
+  ccT=setInterval(()=>{
+    ccLeft--; $("cc-clock").textContent=ccLeft;
+    if(ccLeft<=3&&ccLeft>0) tone(660,.1);
+    if(ccLeft<=0){
+      clearInterval(ccT); tone(440,.5); $("cc-count").disabled=true; $("cc-count").classList.remove("btn-primary");
+      const pair = $("cc-a").value+"→"+$("cc-b").value;
+      Store.update(s=>s.metrics.push({date:todayISO(),type:"changes",value:ccN,detail:pair}));
+      const prev = Store.load().metrics.filter(m=>m.type==="changes"&&m.detail===pair);
+      const best = Math.max(...prev.map(m=>m.value));
+      $("cc-best").textContent = `Saved. Best for ${pair}: ${best} changes/min.`;
+      toast("Result saved to tracker");
+    }
+  },1000);
+};
+$("cc-count").onclick = ()=>{ ccN++; $("cc-num").textContent=ccN; };
+document.addEventListener("keydown", e=>{
+  if(e.code==="Space" && !$("cc-count").disabled && document.activeElement.tagName!=="INPUT"){
+    e.preventDefault(); $("cc-count").click();
+  }
+});
+
+/* ==================== SCALE FINDER ==================== */
+const SCALES = {
+  "Major (Ionian)":[0,2,4,5,7,9,11],
+  "Natural minor (Aeolian)":[0,2,3,5,7,8,10],
+  "Major pentatonic":[0,2,4,7,9],
+  "Minor pentatonic":[0,3,5,7,10],
+  "Blues":[0,3,5,6,7,10],
+  "Dorian":[0,2,3,5,7,9,10],
+  "Phrygian":[0,1,3,5,7,8,10],
+  "Lydian":[0,2,4,6,7,9,11],
+  "Mixolydian":[0,2,4,5,7,9,10],
+  "Locrian":[0,1,3,5,6,8,10],
+  "Harmonic minor":[0,2,3,5,7,8,11],
+};
+const QUAL = ["","m","m","","","m","dim"];
+$("sc-root").innerHTML = NOTES.map(n=>`<option ${n==="C"?"selected":""}>${n}</option>`).join("");
+$("sc-type").innerHTML = Object.keys(SCALES).map(n=>`<option>${n}</option>`).join("");
+function drawScale(){
+  const root=$("sc-root").value, type=$("sc-type").value, iv=SCALES[type];
+  const ri=NOTES.indexOf(root);
+  const notes = iv.map(i=>NOTES[(ri+i)%12]);
+  let chords="";
+  if(iv.length===7){
+    chords = `<div class="stat-lab mb mt-lg">Diatonic chords</div><div class="row wrap-flex" style="gap:7px">` +
+      notes.map((n,i)=>{
+        const q = (type==="Major (Ionian)") ? QUAL[i] : "";
+        return `<span class="tag ${i===0?"tag-accent":""}">${["I","ii","iii","IV","V","vi","vii°"][i]} · ${n}${q}</span>`;
+      }).join("") + `</div>`;
+  }
+  /* fretboard map */
+  let grid = `<div class="stat-lab mb mt-lg">Where it sits (frets 0–12)</div><table><thead><tr><th>String</th>`;
+  for(let f=0;f<=12;f++) grid += `<th class="mono" style="text-align:center;padding:5px">${f}</th>`;
+  grid += `</tr></thead><tbody>`;
+  for(let s=5;s>=0;s--){
+    grid += `<tr><td class="tiny muted">${6-s}</td>`;
+    for(let f=0;f<=12;f++){
+      const nn = noteAt(s,f);
+      const inScale = notes.includes(nn);
+      const isRoot = nn===root;
+      grid += `<td style="text-align:center;padding:4px 2px">${inScale?
+        `<span class="mono tiny" style="display:inline-block;width:22px;padding:2px 0;border-radius:5px;${isRoot?"background:var(--accent);color:#16110a;font-weight:700":"background:var(--surface-3);color:var(--text-2)"}">${nn}</span>`
+        :`<span class="muted tiny">·</span>`}</td>`;
+    }
+    grid += `</tr>`;
+  }
+  grid += `</tbody></table>`;
+  $("sc-out").innerHTML = `<div class="row wrap-flex" style="gap:7px">
+    ${notes.map(n=>`<span class="tag ${n===root?"tag-accent":""}">${n}</span>`).join("")}
+    </div>${chords}${grid}`;
+}
+$("sc-root").onchange = drawScale; $("sc-type").onchange = drawScale;
+drawScale();
+$("sc-play").onclick = ()=>{
+  const root=$("sc-root").value, iv=SCALES[$("sc-type").value];
+  const base = Fretwork.noteFreq(root, 3);
+  [...iv,12].forEach((i,k)=>setTimeout(()=>tone(base*Math.pow(2,i/12),.42,"triangle",.18), k*260));
+};
+</script>
+</body>
+</html>

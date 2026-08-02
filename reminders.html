@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reminders — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Consistency system</div>
+    <h1>Reminders</h1>
+    <p class="sub">The single biggest predictor of whether someone still plays in a year isn't talent or time — it's whether practice has a fixed slot. Set one here.</p>
+  </div>
+
+  <div class="grid g-side">
+    <div>
+      <!-- browser notifications -->
+      <div class="card pad-lg mb">
+        <div class="row-between mb">
+          <h2 style="margin:0">Browser notification</h2>
+          <span class="tag" id="perm-tag">—</span>
+        </div>
+        <p class="small dim mb">Fires while any Fretwork tab is open, at your chosen time, only on days you haven't practised yet. Keep a pinned tab and it works like an app.</p>
+
+        <div class="check-row" style="border-top:1px solid var(--border-soft);padding-top:14px">
+          <input type="checkbox" id="enabled">
+          <label for="enabled"><strong>Enable daily reminder</strong></label>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="field">
+            <label>Time</label>
+            <input type="time" id="time" value="19:00">
+          </div>
+          <div class="field">
+            <label>Days</label>
+            <div class="row wrap-flex" style="gap:5px" id="days"></div>
+          </div>
+        </div>
+
+        <div class="btn-row mt">
+          <button class="btn btn-primary" id="grant">Allow notifications</button>
+          <button class="btn" id="test">Send a test</button>
+        </div>
+        <p class="tiny muted mt" id="note"></p>
+      </div>
+
+      <!-- calendar -->
+      <div class="card pad-lg mb">
+        <h2>Calendar reminder (works when the browser is closed)</h2>
+        <p class="small dim mb">Downloads a recurring calendar event you can open in Google Calendar, Outlook or Apple Calendar. This one nags you on your phone too.</p>
+        <div class="grid g3">
+          <div class="field"><label>Start time</label><input type="time" id="cal-time" value="19:00"></div>
+          <div class="field"><label>Duration</label>
+            <select id="cal-dur"><option value="20">20 min</option><option value="45" selected>45 min</option><option value="90">90 min</option></select>
+          </div>
+          <div class="field"><label>Repeat until</label><input type="date" id="cal-until"></div>
+        </div>
+        <button class="btn btn-primary" id="ics">⬇ Download calendar event (.ics)</button>
+      </div>
+
+      <!-- habit design -->
+      <div class="card pad-lg">
+        <h2>Habit design</h2>
+        <p class="small dim mb">Tick these off. Each one measurably raises the odds you're still playing in six months.</p>
+        <div id="habits"></div>
+      </div>
+    </div>
+
+    <!-- right column -->
+    <div>
+      <div class="card mb">
+        <div class="stat-lab mb">Status today</div>
+        <div class="stat-val" id="today-status">—</div>
+        <p class="small dim mt" id="today-sub"></p>
+        <a class="btn btn-primary mt" style="width:100%" href="practice.html">Practise now</a>
+      </div>
+
+      <div class="card mb">
+        <div class="stat-lab mb">This week</div>
+        <div id="week-dots" class="row" style="gap:6px;justify-content:space-between"></div>
+        <p class="small dim mt" id="week-sub"></p>
+      </div>
+
+      <div class="card mb">
+        <div class="stat-lab mb">Streak insurance</div>
+        <p class="small dim">On a bad day, do the <strong>Short</strong> session — Tier 1 only, about 15 minutes. It keeps the streak and the physical adaptation alive. A missed day costs more than a small day.</p>
+      </div>
+
+      <div class="card">
+        <div class="stat-lab mb">Why a fixed time</div>
+        <p class="small dim">Decision-making is the expensive part. If practice happens "when I have time", you spend willpower every single day deciding. A fixed slot and a guitar left on a stand removes both costs.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, Progress, Reminders, initPage, toast, todayISO, addDays, prettyDate } = Fretwork;
+initPage("reminders.html");
+const $ = id=>document.getElementById(id);
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* ---- state into UI ---- */
+const s = Store.load();
+$("enabled").checked = s.reminders.enabled;
+$("time").value = s.reminders.time;
+$("cal-time").value = s.reminders.time;
+$("cal-until").value = addDays(todayISO(), 365);
+
+$("days").innerHTML = DAYS.map((d,i)=>
+  `<button class="pad" data-d="${i}" style="padding:7px 0;font-size:.78rem">${d}</button>`).join("");
+function paintDays(){
+  const r = Store.load().reminders;
+  document.querySelectorAll("#days .pad").forEach(p=>p.classList.toggle("on", r.days.includes(+p.dataset.d)));
+}
+paintDays();
+$("days").onclick = e=>{
+  const b = e.target.closest("[data-d]"); if(!b) return;
+  const d = +b.dataset.d;
+  Store.update(x=>{
+    const i = x.reminders.days.indexOf(d);
+    if(i>=0) x.reminders.days.splice(i,1); else x.reminders.days.push(d);
+  });
+  paintDays();
+};
+$("enabled").onchange = e=>{
+  Store.update(x=>x.reminders.enabled = e.target.checked);
+  if(e.target.checked && !Reminders.granted()) $("grant").click();
+  else toast(e.target.checked ? "Reminder on" : "Reminder off");
+};
+$("time").onchange = e=>{ Store.update(x=>x.reminders.time=e.target.value); toast("Reminder time saved"); };
+
+function perm(){
+  const ok = Reminders.granted();
+  const t = $("perm-tag");
+  if(!("Notification" in window)){ t.textContent="Not supported"; t.className="tag"; $("note").textContent="This browser doesn't support notifications — use the calendar option below."; return; }
+  t.textContent = ok ? "✓ Permission granted" : Notification.permission==="denied" ? "Blocked" : "Permission needed";
+  t.className = "tag " + (ok?"tag-done":"");
+  $("grant").style.display = ok ? "none" : "inline-flex";
+  $("note").textContent = ok
+    ? "Reminders fire while a Fretwork tab is open. Pin the tab so it stays alive."
+    : Notification.permission==="denied"
+      ? "Notifications are blocked for this page. Re-enable them in your browser's site settings, or use the calendar option."
+      : "";
+}
+perm();
+$("grant").onclick = async ()=>{ await Reminders.requestPermission(); perm(); };
+$("test").onclick = ()=>{
+  if(!Reminders.granted()) return toast("Allow notifications first");
+  const wk = CURRICULUM.week(Store.load().currentWeek);
+  Reminders.fire("Time to practise 🎸", `Week ${wk.n}: ${wk.title}`);
+  toast("Test sent");
+};
+
+/* ---- ics ---- */
+$("ics").onclick = ()=>{
+  const t = $("cal-time").value, dur = +$("cal-dur").value;
+  const [h,m] = t.split(":").map(Number);
+  const start = new Date(); start.setDate(start.getDate()+1); start.setHours(h,m,0,0);
+  const end = new Date(start.getTime()+dur*60000);
+  const until = new Date($("cal-until").value+"T23:59:00");
+  const days = Store.load().reminders.days.map(d=>["SU","MO","TU","WE","TH","FR","SA"][d]).join(",");
+  const fmt = d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+  const wk = CURRICULUM.week(Store.load().currentWeek);
+  const ics = [
+    "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Fretwork//Guitar//EN","CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    "UID:fretwork-"+Date.now()+"@local",
+    "DTSTAMP:"+fmt(new Date()),
+    "DTSTART:"+fmt(start),
+    "DTEND:"+fmt(end),
+    "RRULE:FREQ=WEEKLY;BYDAY="+(days||"MO,TU,WE,TH,FR,SA,SU")+";UNTIL="+fmt(until),
+    "SUMMARY:🎸 Guitar practice",
+    "DESCRIPTION:Fretwork session. Currently on Week "+wk.n+" — "+wk.title.replace(/,/g,"\\,")+".",
+    "BEGIN:VALARM","TRIGGER:-PT10M","ACTION:DISPLAY","DESCRIPTION:Guitar practice in 10 minutes","END:VALARM",
+    "END:VEVENT","END:VCALENDAR",
+  ].join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics],{type:"text/calendar"}));
+  a.download = "guitar-practice.ics"; a.click();
+  toast("Calendar event downloaded");
+};
+
+/* ---- status ---- */
+function status(){
+  const done = Progress.practicedToday();
+  $("today-status").textContent = done ? "✓ Done" : "Not yet";
+  $("today-status").style.color = done ? "var(--good)" : "var(--text)";
+  $("today-sub").textContent = done
+    ? "Streak is safe. Anything else today is bonus."
+    : `${Progress.streak()}-day streak on the line. A 15-minute short session keeps it.`;
+
+  const wrap = $("week-dots"); wrap.innerHTML="";
+  const st = Store.load();
+  let count = 0;
+  for(let i=6;i>=0;i--){
+    const d = addDays(todayISO(),-i);
+    const hit = st.practiceDays.includes(d);
+    if(hit) count++;
+    wrap.innerHTML += `<div style="text-align:center;flex:1">
+      <div class="tiny muted">${DAYS[new Date(d+"T12:00:00").getDay()][0]}</div>
+      <div style="width:100%;height:26px;border-radius:6px;margin-top:4px;background:${hit?"var(--accent)":"var(--surface-3)"}" title="${prettyDate(d)}"></div>
+    </div>`;
+  }
+  $("week-sub").textContent = count+" of the last 7 days. "+(count>=5?"Strong week.":count>=3?"Solid — one more day makes it a habit week.":"Aim for 5.");
+}
+status();
+
+/* ---- habits ---- */
+const HABITS = [
+  ["stand","Keep the guitar on a stand, out of the case, in the room you're in most.","Removes the 30-second friction that kills sessions before they start."],
+  ["slot","Attach practice to something you already do daily — after dinner, before your evening show.","Habit stacking beats scheduling. The existing habit becomes the cue."],
+  ["two","Adopt the two-day rule: never miss twice in a row.","One missed day is noise. Two is the start of a pattern."],
+  ["min","Set a floor you'd be embarrassed to miss — 10 minutes.","On low days the floor is what you do. It almost always turns into more."],
+  ["log","Log every session, even the bad ones.","The record is what makes slow progress visible."],
+  ["play","End every session playing something you enjoy, badly or not.","Ending on fun is what makes you want to come back."],
+];
+function habits(){
+  const st = Store.load();
+  st.settings.habits = st.settings.habits || {};
+  $("habits").innerHTML = HABITS.map(([k,t,w])=>`
+    <div class="check-row" style="align-items:flex-start;border-bottom:1px solid var(--border-soft)">
+      <input type="checkbox" data-h="${k}" ${st.settings.habits[k]?"checked":""} style="margin-top:3px">
+      <label style="flex:1">
+        <div style="font-weight:600">${t}</div>
+        <div class="tiny muted" style="margin-top:3px;font-weight:400">${w}</div>
+      </label>
+    </div>`).join("");
+}
+habits();
+$("habits").onchange = e=>{
+  const c = e.target.closest("[data-h]"); if(!c) return;
+  Store.update(x=>{ x.settings.habits = x.settings.habits||{}; x.settings.habits[c.dataset.h]=c.checked; });
+};
+</script>
+</body>
+</html>

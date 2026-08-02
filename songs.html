@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Songs — Fretwork</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="assets/icon.svg">
+<style>
+  .song {
+    border:1px solid var(--border-soft); background:var(--surface);
+    border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; transition:.14s;
+  }
+  .song:hover { border-color:var(--accent-line); }
+  .song.locked { opacity:.55; }
+  .song-top { display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+  .song-title { font-weight:650; font-size:1.03rem; }
+  .song-meta { font-size:.85rem; color:var(--text-2); margin-top:2px; }
+  .song-chords { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
+  .cc { font-family:var(--mono); font-size:.74rem; padding:2px 8px; border-radius:6px;
+        background:var(--surface-3); color:var(--text-2); border:1px solid var(--border); }
+  .song-why { font-size:.86rem; color:var(--text-3); margin-top:9px; padding-left:11px; border-left:2px solid var(--border); }
+  .song-diagrams { display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-soft);
+                   gap:6px; flex-wrap:wrap; }
+  .song-diagrams.show { display:flex; }
+  .song-actions { display:flex; gap:7px; flex-shrink:0; }
+  .capo { font-family:var(--mono); font-size:.74rem; color:var(--accent); }
+</style>
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Repertoire library</div>
+    <h1>Songs to learn</h1>
+    <p class="sub">Mostly Hindi — unplugged staples, modern Bollywood, indie, 90s/2000s, ghazals and Hindi rock — with English classics mixed in. Each one is slotted against the week of the course where it becomes playable.</p>
+  </div>
+
+  <div class="grid g4 mb">
+    <div class="card stat"><div class="stat-val" id="n-total">0</div><div class="stat-lab">Songs</div></div>
+    <div class="card stat"><div class="stat-val" id="n-hi">0</div><div class="stat-lab">Hindi / Urdu / Punjabi</div></div>
+    <div class="card stat"><div class="stat-val" id="n-en">0</div><div class="stat-lab">English</div></div>
+    <div class="card stat"><div class="stat-val" id="n-now">0</div><div class="stat-lab">Unlocked so far</div><div class="stat-sub" id="n-now-sub"></div></div>
+  </div>
+
+  <div class="callout mb">
+    <strong>About keys and capos.</strong> These are the common guitar-chart versions, which often sit a little away from the studio recording. Move the capo up or down until the song sits comfortably in <em>your</em> voice — week 17 teaches you exactly how. The chords stay the same; only the capo moves.
+  </div>
+
+  <!-- recommended -->
+  <div class="section" id="rec-section">
+    <div class="section-head">
+      <h2>Right for you now</h2>
+      <span class="tag tag-accent" id="rec-week"></span>
+    </div>
+    <div id="rec"></div>
+  </div>
+
+  <!-- filters -->
+  <div class="section">
+    <h2>Full library</h2>
+    <div class="card mb">
+      <div class="grid g4">
+        <div class="field" style="margin-bottom:0">
+          <label>Search</label>
+          <input type="text" id="q" placeholder="Song, artist, chord…">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Language</label>
+          <select id="f-lang"><option value="">All languages</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Category</label>
+          <select id="f-tag"><option value="">All categories</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Level</label>
+          <select id="f-diff"><option value="">All levels</option></select>
+        </div>
+      </div>
+      <div class="check-row mt">
+        <input type="checkbox" id="f-now">
+        <label for="f-now">Only show songs I can play at my current week</label>
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/curriculum.js"></script>
+<script src="assets/js/songs.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/sync.js"></script>
+<script>
+const { Store, initPage, toast, chordSVG, CHORDS, uid, todayISO, esc } = Fretwork;
+initPage("songs.html");
+const $ = id=>document.getElementById(id);
+
+const wkNow = Store.load().currentWeek;
+
+$("n-total").textContent = SONGLIB.count();
+$("n-hi").textContent = SONGLIB.byLang("hi")+SONGLIB.byLang("ur")+SONGLIB.byLang("pa");
+$("n-en").textContent = SONGLIB.byLang("en");
+const unlocked = SONGLIB.playableAt(wkNow).length;
+$("n-now").textContent = unlocked;
+$("n-now-sub").textContent = unlocked
+  ? "You're on week " + wkNow
+  : "First songs unlock at week 4";
+
+$("f-lang").innerHTML += Object.entries(SONGLIB.langs).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+$("f-tag").innerHTML  += Object.entries(SONGLIB.tags).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+$("f-diff").innerHTML += SONGLIB.diffs.map(d=>`<option value="${d.n}">${d.n} · ${d.name} (weeks ${d.weeks})</option>`).join("");
+
+const inRepertoire = t => Store.load().songs.some(s=>s.title===t);
+
+function card(s){
+  const locked = s.week > wkNow;
+  const added = inRepertoire(s.t);
+  return `<div class="song ${locked?"locked":""}" data-t="${esc(s.t)}">
+    <div class="song-top">
+      <div style="flex:1;min-width:230px">
+        <div class="song-title">${esc(s.t)}</div>
+        <div class="song-meta">${esc(s.a)} · ${s.y} · <span class="tag" style="font-size:.68rem;padding:1px 7px">${SONGLIB.langs[s.lang]}</span>
+          <span class="tag tag-p${Math.min(4,s.diff)}" style="font-size:.68rem;padding:1px 7px">Week ${s.week}+</span></div>
+      </div>
+      <div class="song-actions">
+        <button class="btn btn-sm" data-act="diagrams">Chords</button>
+        <button class="btn btn-sm ${added?"":"btn-primary"}" data-act="add" ${added?"disabled":""}>${added?"✓ Added":"+ Repertoire"}</button>
+      </div>
+    </div>
+    <div class="song-chords">
+      <span class="cc">Key ${esc(s.key)}</span>
+      <span class="cc capo">${s.capo?("Capo "+s.capo):"No capo"}</span>
+      <span class="cc">${esc(s.strum)}</span>
+      ${s.ch.map(c=>`<span class="cc">${esc(c)}</span>`).join("")}
+    </div>
+    <div class="song-why">${esc(s.why)}</div>
+    <div class="song-diagrams">${s.ch.map(c=>CHORDS[c]?chordSVG(c,0.8):"").join("")}</div>
+  </div>`;
+}
+
+function renderRec(){
+  /* forWeek sorts by proximity, so early users still see the songs coming up next */
+  const list = SONGLIB.forWeek(wkNow).slice(0,4);
+  $("rec-week").textContent = "Week "+wkNow+" — "+(CURRICULUM.week(wkNow)?.title||"");
+  const anyLocked = list.some(s=>s.week>wkNow);
+  $("rec").innerHTML =
+    (anyLocked ? `<p class="small muted mb">Dimmed songs need chords you haven't covered yet — they unlock at the week shown. Add them now so they're waiting for you.</p>` : "") +
+    (list.length ? list.map(card).join("") : '<div class="empty">Browse the full library below.</div>');
+}
+
+function renderList(){
+  const q = $("q").value.trim().toLowerCase();
+  const lang = $("f-lang").value, tag = $("f-tag").value, diff = $("f-diff").value;
+  const onlyNow = $("f-now").checked;
+
+  let list = SONGLIB.all.filter(s=>{
+    if(lang && s.lang!==lang) return false;
+    if(tag && s.tag!==tag) return false;
+    if(diff && s.diff!==+diff) return false;
+    if(onlyNow && s.week>wkNow) return false;
+    if(q){
+      const hay = (s.t+" "+s.a+" "+s.ch.join(" ")+" "+s.tag+" "+s.key).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if(!list.length){ $("list").innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No songs match those filters.</div>'; return; }
+
+  $("list").innerHTML = SONGLIB.diffs.map(d=>{
+    const group = list.filter(s=>s.diff===d.n).sort((a,b)=>a.week-b.week);
+    if(!group.length) return "";
+    return `<div class="section" style="margin-top:26px">
+      <div class="row-between wrap-flex mb">
+        <div>
+          <span class="tag tag-p${Math.min(4,d.n)}">Level ${d.n} · ${d.name}</span>
+          <span class="small dim" style="margin-left:10px">${d.sub} — curriculum weeks ${d.weeks}</span>
+        </div>
+        <span class="tiny muted">${group.length} songs</span>
+      </div>
+      ${group.map(card).join("")}
+    </div>`;
+  }).join("");
+}
+
+function wire(root){
+  root.onclick = e=>{
+    const btn = e.target.closest("[data-act]"); if(!btn) return;
+    const el = btn.closest(".song"), title = el.dataset.t;
+    const s = SONGLIB.all.find(x=>x.t===title);
+    if(btn.dataset.act==="diagrams"){
+      el.querySelector(".song-diagrams").classList.toggle("show");
+      btn.classList.toggle("btn-primary");
+      return;
+    }
+    if(btn.dataset.act==="add"){
+      if(inRepertoire(title)) return;
+      Store.update(st=>st.songs.push({
+        id: uid(), title: s.t, artist: s.a,
+        key: s.key + (s.capo?(" capo "+s.capo):""),
+        status: "want", added: todayISO(),
+        notes: s.ch.join(" ") + " · " + s.strum,
+      }));
+      toast("Added to your repertoire");
+      renderRec(); renderList();
+    }
+  };
+}
+wire($("rec")); wire($("list"));
+
+["q","f-lang","f-tag","f-diff","f-now"].forEach(id=>{
+  $(id).addEventListener(id==="q"?"input":"change", renderList);
+});
+
+renderRec(); renderList();
+</script>
+</body>
+</html>

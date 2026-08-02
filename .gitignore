@@ -1,0 +1,4 @@
+# Local backups
+fretwork-backup-*.json
+.DS_Store
+Thumbs.db
